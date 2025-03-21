@@ -15,11 +15,9 @@ class Step2 extends StatefulWidget {
 }
 
 class Step2State extends State<Step2> {
-  // Contrôleurs pour la surface et l'année de construction
   final TextEditingController surfaceController = TextEditingController();
   final TextEditingController yearController = TextEditingController();
 
-  // Compteurs pour les différentes pièces
   Map<String, int> counters = {
     'chambres': 0,
     'salles_de_bain': 0,
@@ -31,7 +29,6 @@ class Step2State extends State<Step2> {
     'etages': 0,
   };
 
-  // Liste des icônes associées à chaque type de pièce
   final Map<String, IconData> icons = {
     'chambres': Icons.bed,
     'salles_de_bain': Icons.bathtub,
@@ -43,7 +40,6 @@ class Step2State extends State<Step2> {
     'etages': Icons.stairs,
   };
 
-  // Noms d'affichage pour chaque type
   final Map<String, String> displayNames = {
     'chambres': 'Chambres',
     'salles_de_bain': 'Salles de bain',
@@ -87,14 +83,15 @@ class Step2State extends State<Step2> {
   }
 
   void _updateData() {
-    // Créer un Map avec toutes les données
+    double surface = double.tryParse(surfaceController.text) ?? 0.0;
+    int anneeConstruction = int.tryParse(yearController.text) ?? 0;
     Map<String, dynamic> data = {
-      'surface': surfaceController.text.isNotEmpty ? int.tryParse(surfaceController.text) : null,
-      'annee_construction': yearController.text.isNotEmpty ? int.tryParse(yearController.text) : null,
-      ...counters,
-    };
+    'surface': surface, 
+    'annee_construction': anneeConstruction, 
+    ...counters, 
+  };
 
-    // Transmettre les données au parent
+  
     widget.onDataChanged(data);
   }
 
@@ -162,9 +159,8 @@ class Step2State extends State<Step2> {
 
             SizedBox(height: 10),
 
-            // Liste des compteurs pour les différentes pièces
             SizedBox(
-              height: 300, // Hauteur fixe pour la ListView
+              height: 300,
               child: ListView.builder(
                 itemCount: counters.length,
                 itemBuilder: (context, index) {

@@ -7,6 +7,8 @@ import 'package:houeto/Component/Step5.dart';
 import 'package:houeto/Component/Step6.dart';
 import 'package:houeto/Component/Step7.dart';
 import 'package:houeto/Component/Stephoraire.dart';
+import 'package:houeto/JsonModels/JourDisponibilite.dart';
+import 'package:houeto/Services/Firebase/FirestoreService.dart';
 
 class Addlogement extends StatefulWidget {
   const Addlogement({super.key});
@@ -35,6 +37,7 @@ class AddlogementState extends State<Addlogement> {
   void getStep3Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
+
   void getStep4Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
@@ -42,15 +45,19 @@ class AddlogementState extends State<Addlogement> {
   void getStep5Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
+
   void getStep6Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
+
   void getStep7Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
+
   void getStep8Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
+
   late List<Step> steps;
 
   @override
@@ -102,13 +109,14 @@ class AddlogementState extends State<Addlogement> {
         content: Step5(onDataChanged: getStep6Data),
         isActive: true,
       ),
-    Step(
-        title: Text("Medias(Ajouter des photos et vidéos pour valoriser le logement)",
+      Step(
+        title: Text(
+            "Medias(Ajouter des photos et vidéos pour valoriser le logement)",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Step6(onDataChanged: getStep7Data),
         isActive: true,
       ),
-    Step(
+      Step(
         title: Text("Confirmation",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Step7(onDataChanged: getStep8Data),
@@ -120,7 +128,7 @@ class AddlogementState extends State<Addlogement> {
 
   @override
   Widget build(BuildContext context) {
-   // final hauteurEcran = MediaQuery.of(context).size.height;
+    // final hauteurEcran = MediaQuery.of(context).size.height;
 
     return Scaffold(
       appBar: AppBar(
@@ -160,18 +168,21 @@ class AddlogementState extends State<Addlogement> {
                     }
                   });
                 },
-                controlsBuilder: (BuildContext context, ControlsDetails details) {
+                controlsBuilder:
+                    (BuildContext context, ControlsDetails details) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 20.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Bouton Annuler
-                        if (initialStep > 0) // Afficher le bouton Annuler seulement si ce n'est pas la première étape
+                        if (initialStep >
+                            0) // Afficher le bouton Annuler seulement si ce n'est pas la première étape
                           ElevatedButton(
                             onPressed: details.onStepCancel,
                             style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
                             ),
                             child: Text(
                               'Annuler',
@@ -182,15 +193,23 @@ class AddlogementState extends State<Addlogement> {
                         ElevatedButton(
                           onPressed: initialStep == steps.length - 1
                               ? () async {
-                                 print("Données collectées: $logementData");
+                                  print("Données collectées: $logementData");
+                                  logementData.forEach((key, value) {
+                                    print(
+                                        '$key: $value (${value.runtimeType})');
+                                  });
+                                  addLogement();
                                   print("Logement ajouté avec succès!");
                                 }
                               : details.onStepContinue,
                           style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
                           ),
                           child: Text(
-                            initialStep == steps.length - 1 ? 'Confirmer' : 'Continuer',
+                            initialStep == steps.length - 1
+                                ? 'Confirmer'
+                                : 'Continuer',
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
@@ -204,5 +223,87 @@ class AddlogementState extends State<Addlogement> {
         ],
       ),
     );
+  }
+
+  Future<void> addLogement() async {
+    try {
+      // Récupération et conversion des données
+      String titre = logementData['titre'] ?? '';
+      String adresse = logementData['adresse'] ?? '';
+      String propertyType = logementData['propertyType'] ?? '';
+      double surface =
+          double.tryParse(logementData['surface'].toString()) ?? 0.0;
+      int anneDeConstruction =
+          int.tryParse(logementData['annee_construction'].toString()) ?? 0;
+      int nbreDeChambre =
+          int.tryParse(logementData['chambres'].toString()) ?? 0;
+      int nbreDeCuisine =
+          int.tryParse(logementData['cuisines'].toString()) ?? 0;
+      int nbreDeSalleDeBain =
+          int.tryParse(logementData['salles_de_bain'].toString()) ?? 0;
+      int nbreDeSalons = int.tryParse(logementData['salons'].toString()) ?? 0;
+      int nbreDeTerrasse =
+          int.tryParse(logementData['terrasses'].toString()) ?? 0;
+      int nbreDeBalcon = int.tryParse(logementData['balcons'].toString()) ?? 0;
+      int nbreDeParking = int.tryParse(logementData['parking'].toString()) ?? 0;
+      bool estSanitaire = logementData['estSanitaire'] ?? false;
+      bool estMeuble = logementData['estMeuble'] ?? false;
+      bool estClimatise = logementData['estClimatise'] ?? false;
+      String etat = logementData['etat'] ?? '';
+      double avance = double.tryParse(logementData['avance'].toString()) ?? 0.0;
+      double loyerMois =
+          double.tryParse(logementData['loyerMois'].toString()) ?? 0.0;
+      double loyerJour =
+          double.tryParse(logementData['loyerJour'].toString()) ?? 0.0;
+      double caution =
+          double.tryParse(logementData['caution'].toString()) ?? 0.0;
+      List<Jourdisponibilite> jours = logementData['doctorAvailability'] ?? [];
+      String conditionAdmission = logementData['conditionAdmission'] ?? '';
+      String typeDeBail = logementData['typeDeBail'] ?? '';
+      double fraisVisite =
+          double.tryParse(logementData['fraisVisite'].toString()) ?? 0.0;
+      String photo1 = logementData['photo1'] ?? '';
+      String photo2 = logementData['photo2'] ?? '';
+      String photo3 = logementData['photo3'] ?? '';
+      String photo4 = logementData['photo4'] ?? '';
+      String description = logementData['description'] ?? '';
+
+      // Ajout du logement
+      await FirestoreService().addLogement(
+        titre,
+        adresse,
+        propertyType,
+        surface,
+        anneDeConstruction,
+        nbreDeChambre,
+        nbreDeCuisine,
+        nbreDeSalleDeBain,
+        nbreDeSalons,
+        nbreDeTerrasse,
+        nbreDeBalcon,
+        nbreDeParking,
+        estSanitaire,
+        estMeuble,
+        estClimatise,
+        etat,
+        avance,
+        loyerMois,
+        loyerJour,
+        caution,
+        jours,
+        conditionAdmission,
+        typeDeBail,
+        fraisVisite,
+        photo1,
+        photo2,
+        photo3,
+        photo4,
+        description,
+      );
+
+      print("Logement ajouté avec succès !");
+    } catch (e) {
+      print("Erreur lors de l'ajout du logement: $e");
+    }
   }
 }

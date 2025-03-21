@@ -30,8 +30,16 @@ class Step5State extends State<Step5> {
 
   @override
   void initState() {
-    sendDataToParent();
     super.initState();
+    condition.addListener(sendDataToParent);
+    fraisVisite.addListener(sendDataToParent);
+  }
+
+  @override
+  void dispose() {
+    condition.removeListener(sendDataToParent);
+    fraisVisite.removeListener(sendDataToParent);
+    super.dispose();
   }
 
   @override
@@ -69,7 +77,7 @@ class Step5State extends State<Step5> {
                 ),
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
-                  sendDataToParent(); 
+                  sendDataToParent();
                 },
               ),
             ),
