@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:houeto/Component/Step3Widget/EtatChoice.dart';
 
 class Step3 extends StatefulWidget {
-   final void Function(Map<String, dynamic> data) onDataChanged;
+  final void Function(Map<String, dynamic> data) onDataChanged;
   const Step3({super.key,required this.onDataChanged});
 
   @override

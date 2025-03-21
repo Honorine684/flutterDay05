@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:houeto/Component/Step1.dart';
 import 'package:houeto/Component/Step2.dart';
 import 'package:houeto/Component/Step3.dart';
+import 'package:houeto/Component/Step4.dart';
+import 'package:houeto/Component/Step5.dart';
+import 'package:houeto/Component/Step6.dart';
+import 'package:houeto/Component/Step7.dart';
+import 'package:houeto/Component/Stephoraire.dart';
 
 class Addlogement extends StatefulWidget {
   const Addlogement({super.key});
@@ -30,11 +35,22 @@ class AddlogementState extends State<Addlogement> {
   void getStep3Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
+  void getStep4Data(Map<String, dynamic> data) {
+    logementData.addAll(data);
+  }
 
   void getStep5Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
-
+  void getStep6Data(Map<String, dynamic> data) {
+    logementData.addAll(data);
+  }
+  void getStep7Data(Map<String, dynamic> data) {
+    logementData.addAll(data);
+  }
+  void getStep8Data(Map<String, dynamic> data) {
+    logementData.addAll(data);
+  }
   late List<Step> steps;
 
   @override
@@ -67,12 +83,37 @@ class AddlogementState extends State<Addlogement> {
         isActive: true,
       ),
       Step(
-        title: Text("Disponibilités",
+        title: Text("Informations financières",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
-          child: Step1(onDataChanged: getStep5Data),
+          child: Step4(onDataChanged: getStep4Data),
         ),
         isActive: true,
+      ),
+      Step(
+        title: Text("Jour et heure de visite(si possible)",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Stephoraire(onDataChanged: getStep5Data),
+        isActive: true,
+      ),
+      Step(
+        title: Text("Conditions de visite",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Step5(onDataChanged: getStep6Data),
+        isActive: true,
+      ),
+    Step(
+        title: Text("Medias(Ajouter des photos et vidéos pour valoriser le logement)",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Step6(onDataChanged: getStep7Data),
+        isActive: true,
+      ),
+    Step(
+        title: Text("Confirmation",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Step7(onDataChanged: getStep8Data),
+        isActive: true,
+        state: StepState.complete,
       ),
     ];
   }
