@@ -39,6 +39,7 @@ dependencies:
   flutter_switch: ^0.3.2
   image_picker: ^1.1.2
   intl: ^0.20.2
+  stylish_bottom_bar: ^1.1.0
 
 dev_dependencies:
   flutter_test:
