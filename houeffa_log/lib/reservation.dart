@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-
-
 class Reservation extends StatefulWidget {
   const Reservation({Key? key}) : super(key: key);
 
@@ -12,7 +10,6 @@ class Reservation extends StatefulWidget {
 class _ReservationState extends State<Reservation> {
   DateTime selectedDate = DateTime.now();
 
-
   final List<String> days = [
     'Lundi',
     'Mardi',
@@ -20,7 +17,6 @@ class _ReservationState extends State<Reservation> {
     'Jeudi',
     'Vendredi',
   ];
-
 
   final List<String> hours = [
     '10:00',
@@ -33,7 +29,7 @@ class _ReservationState extends State<Reservation> {
   ];
 
   String? selectedDay;
-  String? selectedHour; 
+  String? selectedHour;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +53,6 @@ class _ReservationState extends State<Reservation> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
             Text(
               (selectedDay == null || selectedHour == null)
                   ? "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}"
@@ -65,7 +60,6 @@ class _ReservationState extends State<Reservation> {
               style: TextStyle(fontSize: 20),
             ),
             SizedBox(height: 20),
-            
             ElevatedButton(
               child: const Text("Choisir une date"),
               onPressed: () async {
@@ -78,7 +72,6 @@ class _ReservationState extends State<Reservation> {
                 if (dateTime != null) {
                   setState(() {
                     selectedDate = dateTime;
-                    
                     selectedDay = null;
                     selectedHour = null;
                   });
@@ -86,7 +79,6 @@ class _ReservationState extends State<Reservation> {
               },
             ),
             SizedBox(height: 20),
-            
             Text(
               "Jours disponibles :",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -104,7 +96,7 @@ class _ReservationState extends State<Reservation> {
                       onTap: () {
                         setState(() {
                           selectedDay = days[index];
-                          selectedHour = null; 
+                          selectedHour = null;
                         });
                       },
                       child: Chip(
@@ -119,7 +111,6 @@ class _ReservationState extends State<Reservation> {
               ),
             ),
             SizedBox(height: 20),
-            
             if (selectedDay != null) ...[
               Text(
                 "Heures disponibles :",
@@ -145,7 +136,36 @@ class _ReservationState extends State<Reservation> {
                 ),
               ),
             ],
-            
+            SizedBox(height: 20),
+          
+            Center(
+              child: GestureDetector(
+                onTap: (selectedDay != null && selectedHour != null)
+                    ? () {
+                   
+                        print(
+                            "Paiement de 5000f confirmé pour $selectedDay ${selectedDate.year}-${selectedDate.month}-${selectedDate.day} à $selectedHour");
+                      }
+                    : null, 
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: (selectedDay != null && selectedHour != null)
+                        ? Colors.deepOrangeAccent 
+                        : Colors.grey,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    "Confirmer et payer 5000f",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
