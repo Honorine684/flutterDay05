@@ -155,13 +155,11 @@ class Step1 extends StatefulWidget {
 class Step1State extends State<Step1> {
   final formKey = GlobalKey<FormState>();
   final titre = TextEditingController();
-  final adresse = TextEditingController();
   String? selectedPropertyType;
 
   void updateData() {
     widget.onDataChanged({
       'titre': titre.text,
-      'adresse': adresse.text,
       'propertyType': selectedPropertyType,
     });
   }
@@ -170,13 +168,11 @@ class Step1State extends State<Step1> {
   void initState() {
     super.initState();
     titre.addListener(updateData);
-    adresse.addListener(updateData);
   }
 
   @override
   void dispose() {
     titre.removeListener(updateData);
-    adresse.removeListener(updateData);
     super.dispose();
   }
 
@@ -217,27 +213,7 @@ Widget build(BuildContext context) {
               },
             ),
           ),
-          // adresse
-          Container(
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.blue,
-                  width: 2.0,
-                ),
-              ),
-            ),
-            child: TextFormField(
-              controller: adresse,
-              decoration: const InputDecoration(
-                icon: Icon(Icons.location_on),
-                border: InputBorder.none,
-                hintText: "Adresse(optionnel)",
-              ),
-            ),
-          ),
+        
           // type de bien
           Container(
             margin: const EdgeInsets.all(8),

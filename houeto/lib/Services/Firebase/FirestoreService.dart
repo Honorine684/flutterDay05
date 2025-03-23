@@ -34,6 +34,8 @@ class FirestoreService {
     String photo3,
     String photo4,
     String description,
+    double latitude,
+    double longitude
   ) async {
     // Ajouter le logement principal
     DocumentReference logementRef = await logement.add({
@@ -64,6 +66,8 @@ class FirestoreService {
       'photo2': photo2,
       'photo3': photo3,
       'photo4': photo4,
+      'latitude':latitude,
+      'longitude':longitude,
       'Timestamp': Timestamp.now(),
     });
 

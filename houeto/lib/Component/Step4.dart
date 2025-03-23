@@ -127,6 +127,14 @@ class Step4State extends State<Step4> {
                 ),
                 keyboardType: TextInputType.number,
               ),
+            ),Expanded(
+              child: TextFormField(
+                controller: caution,
+                decoration: const InputDecoration(
+                  labelText: 'Caution',
+                ),
+                keyboardType: TextInputType.number,
+              ),
             ),
           ],
         ),

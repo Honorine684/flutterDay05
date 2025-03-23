@@ -6,6 +6,7 @@ import 'package:houeto/Component/Step4.dart';
 import 'package:houeto/Component/Step5.dart';
 import 'package:houeto/Component/Step6.dart';
 import 'package:houeto/Component/Step7.dart';
+import 'package:houeto/Component/StepDuMaps.dart';
 import 'package:houeto/Component/Stephoraire.dart';
 import 'package:houeto/JsonModels/JourDisponibilite.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
@@ -55,6 +56,9 @@ class AddlogementState extends State<Addlogement> {
   }
 
   void getStep8Data(Map<String, dynamic> data) {
+    logementData.addAll(data);
+  }
+  void getStep9Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
 
@@ -114,6 +118,13 @@ class AddlogementState extends State<Addlogement> {
             "Medias(Ajouter des photos et vidéos pour valoriser le logement)",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Step6(onDataChanged: getStep7Data),
+        isActive: true,
+      ),
+      Step(
+        title: Text(
+            "Coordonnées géographiques(Adresse réelle)",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Stepdumaps(onDataChanged: getStep8Data),
         isActive: true,
       ),
       Step(
@@ -267,6 +278,8 @@ class AddlogementState extends State<Addlogement> {
       String photo3 = logementData['photo3'] ?? '';
       String photo4 = logementData['photo4'] ?? '';
       String description = logementData['description'] ?? '';
+      double latitude = double.tryParse(logementData['latitude'].toString()) ?? 0.0;
+      double longitude = double.tryParse(logementData['longitude'].toString()) ?? 0.0;
 
       // Ajout du logement
       await FirestoreService().addLogement(
@@ -299,6 +312,8 @@ class AddlogementState extends State<Addlogement> {
         photo3,
         photo4,
         description,
+        latitude,
+        longitude
       );
 
       print("Logement ajouté avec succès !");
