@@ -1,7 +1,18 @@
+buildscript {
+    repositories {
+        google()        // Déjà présent
+        mavenCentral()  // Déjà présent
+    }
+    dependencies {
+        // Ajoutez cette ligne pour le plugin Google Services
+        classpath 'com.google.gms:google-services:4.3.15'
+    }
+}
+
 allprojects {
     repositories {
-        google()
-        mavenCentral()
+        google()        // Déjà présent
+        mavenCentral()  // Déjà présent
     }
 }
 
@@ -12,6 +23,7 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

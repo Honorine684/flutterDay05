@@ -1,60 +1,40 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:houeffa_log/auth/auth_service.dart';
-import 'package:houeffa_log/auth/sign_up.dart';
-import 'package:houeffa_log/wrapper.dart';
+import 'package:houeffa_log/auth/login.dart';
+import 'package:houeffa_log/wrapper.dart'; 
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _auth = AuthService();
   bool _isLoading = false;
 
- 
-  Future<void> _loginWithEmail() async {
+  Future<void> _signup() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      User? user = await _auth.signInWithEmail(
+      User? user = await _auth.signUpWithEmail(
         _emailController.text,
         _passwordController.text,
       );
       if (user != null) {
+        
+        await _auth.sendEmailVerificationLink(user);
+        
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Wrapper()));
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Erreur de connexion")),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
- 
-  Future<void> _loginWithGoogle() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      User? user = await _auth.signInWithGoogle();
-      if (user != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Wrapper()));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(content: Text(e.message ?? "Erreur d'inscription")),
       );
     } finally {
       setState(() {
@@ -74,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Connexion - HouefFa Toit"),
+        title: Text("Inscription - HouefFa Toit"),
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -86,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     SizedBox(height: 40),
                     Text(
-                      "Bienvenue sur HouefFa Toit",
+                      "Créer un compte sur HouefFa Toit",
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 40),
@@ -111,34 +91,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: 30),
                     ElevatedButton(
-                      onPressed: _loginWithEmail,
+                      onPressed: _signup,
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                         backgroundColor: Colors.deepOrangeAccent,
                       ),
-                      child: Text("Se connecter", style: TextStyle(color: Colors.white)),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: _loginWithGoogle,
-                      icon: Icon(Icons.g_mobiledata, color: Colors.white),
-                      label: Text("Se connecter avec Google", style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                        backgroundColor: Colors.blue,
-                      ),
+                      child: Text("S'inscrire", style: TextStyle(color: Colors.white)),
                     ),
                     SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text("Pas de compte ? "),
+                        Text("Déjà un compte ? "),
                         InkWell(
                           onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => SignupScreen()));
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
                           },
                           child: Text(
-                            "S'inscrire",
+                            "Se connecter",
                             style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -151,4 +121,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
