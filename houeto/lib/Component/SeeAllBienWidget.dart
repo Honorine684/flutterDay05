@@ -37,7 +37,7 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
           String adresse = doc.get('adresse') ?? 'Adresse non disponible';
           String typeProperty = doc.get('propertyType') ?? 'Type non disponible';
           String photo1 = doc.get('photo1') ?? '';
-          double superficie = doc.get('superficie') ?? 0.0;
+          double surface = doc.get('surface') ?? 0.0;
           double latitude = doc.get('latitude') ?? 0.0;
           double longitude = doc.get('longitude') ?? 0.0;
           double loyerJour = doc.get('loyerJour') ?? 0.0;
@@ -56,7 +56,7 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
               loyerJour: loyerJour,
               loyerMois: loyerMois,
               chambres: chambres,
-              superficie: superficie,
+              surface: surface,
             ),
           );
         } catch (e) {
@@ -127,7 +127,7 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
           children: [
             Text("Adresse: ${logement.adresse}"),
             Text("Type: ${logement.typeProperty}"),
-            Text("Superficie: ${logement.superficie} m²"),
+            Text("Superficie: ${logement.surface} m²"),
             Text("Loyer/jour: ${logement.loyerJour} FCFA"),
             Text("Loyer/mois: ${logement.loyerMois} FCFA"),
             Text("Chambres: ${logement.chambres}"),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class Etatchoice extends StatefulWidget {
   final String selectedEtat;
-  final void Function(String selectedEtat) onEtatChanged; 
+  final void Function(String selectedEtat) onEtatChanged;
   const Etatchoice({
     super.key,
     required this.selectedEtat,
@@ -34,11 +34,10 @@ class EtatchoiceState extends State<Etatchoice> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("État général du logement :", style: TextStyle(fontSize: 16)),
+        Text("État général:", style: TextStyle(fontSize: 16)),
         SizedBox(height: 8),
         InkWell(
           onTap: () {
-            
             _showEtatMenu(context);
           },
           child: Row(
@@ -87,7 +86,7 @@ class EtatchoiceState extends State<Etatchoice> {
     ).then((value) {
       if (value != null) {
         setState(() {
-          selectedEtat = value; 
+          selectedEtat = value;
         });
         widget.onEtatChanged(value);
       }

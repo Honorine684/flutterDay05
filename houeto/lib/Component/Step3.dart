@@ -22,7 +22,7 @@ class Step3State extends State<Step3> {
       'etat':selectedEtat
     };
 
-    widget.onDataChanged(data); // Appel du callback avec les données
+    widget.onDataChanged(data); 
   }
 @override
   void initState() {
@@ -127,9 +127,9 @@ class Step3State extends State<Step3> {
             setState(() {
               selectedEtat = etat;
             });
-            sendDataToParent(); // Envoie des données après modification de l'atet
+            sendDataToParent(); 
           },
-        ),
+        ), 
         ],
       ),
     );

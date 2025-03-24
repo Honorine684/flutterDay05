@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:houeto/Component/BottomBar.dart';
+import 'package:houeto/Authentication/RedirectionPage.dart';
 import 'package:houeto/firebase_options.dart';
 
 
@@ -10,7 +10,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform
   );
    runApp(MaterialApp(
-   home: Bottombar(),
+   home: Redirectionpage(),
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       scaffoldBackgroundColor: Colors.white,

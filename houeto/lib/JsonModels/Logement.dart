@@ -8,7 +8,7 @@ class Logement {
   final String photo1;
   final double loyerJour;
   final double loyerMois;
-  final double superficie;
+  final double surface;
   final int chambres;
   Logement({
     required this.id,
@@ -21,6 +21,6 @@ class Logement {
     required this.loyerJour,
     required this.loyerMois,
     required this.chambres,
-    required this.superficie
+    required this.surface
   });
 }

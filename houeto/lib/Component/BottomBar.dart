@@ -26,12 +26,11 @@ class _BottombarState extends State<Bottombar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //extendBody: true, // Pour rendre la encoche du bouton flottant transparente
+      extendBody: true, 
 
-      // Barre de navigation personnalisée
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(), // Forme de la encoche
-        notchMargin: 8.0, // Marge de la encoche
+        shape: const CircularNotchedRectangle(), 
+        notchMargin: 8.0,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [

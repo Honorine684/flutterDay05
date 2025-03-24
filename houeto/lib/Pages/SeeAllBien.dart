@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Component/SeeAllBienWidget.dart';
@@ -14,11 +16,14 @@ class Seeallbien extends StatefulWidget {
 
 class SeeallbienState extends State<Seeallbien> {
   List<Logement> logements = [];
+  StreamSubscription? _logementSubscription; 
 
   void loadLogement() {
     print("Chargement des logements...");
 
-    FirestoreService().getLogement().listen((snapshot) {
+    _logementSubscription?.cancel();
+
+    _logementSubscription = FirestoreService().getLogement().listen((snapshot) {
       print("Données reçues: ${snapshot.docs.length} logements");
       List<Logement> listeLogement = [];
 
@@ -30,7 +35,7 @@ class SeeallbienState extends State<Seeallbien> {
           String typeProperty =
               doc.get('propertyType') ?? 'Type non disponible';
           String photo1 = doc.get('photo1') ?? '';
-          double superficie = doc.get('surface') ?? 0.0;
+          double surface = doc.get('surface') ?? 0.0;
           double latitude = doc.get('latitude') ?? 0.0;
           double longitude = doc.get('longitude') ?? 0.0;
           double loyerJour = doc.get('loyerJour') ?? 0.0;
@@ -49,17 +54,20 @@ class SeeallbienState extends State<Seeallbien> {
               loyerJour: loyerJour,
               loyerMois: loyerMois,
               chambres: chambres,
-              superficie: superficie,
+              surface: surface,
             ),
           );
         } catch (e) {
           print("Erreur sur un document logement: $e");
         }
       }
-      setState(() {
-        logements = listeLogement;
-        print("Logements chargés: ${logements.length}");
-      });
+
+      if (mounted) {
+        setState(() {
+          logements = listeLogement;
+          print("Logements chargés: ${logements.length}");
+        });
+      }
     }, onError: (error) {
       print("Erreur lors du chargement des logements: $error");
     });
@@ -67,8 +75,14 @@ class SeeallbienState extends State<Seeallbien> {
 
   @override
   void initState() {
-    loadLogement();
     super.initState();
+    loadLogement();
+  }
+
+  @override
+  void dispose() {
+    _logementSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -156,7 +170,7 @@ class SeeallbienState extends State<Seeallbien> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            "72 résultats trouvés",
+                            "${logements.length} résultats trouvés", 
                             style: TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w300),
                           ),
@@ -274,7 +288,7 @@ class SeeallbienState extends State<Seeallbien> {
                                                 color: Colors.grey,
                                               ),
                                               Text(
-                                                  "${logements[index].superficie.toString()} m2")
+                                                  "${logements[index].surface.toString()} m²")
                                             ],
                                           ),
                                           SizedBox(height: 4),

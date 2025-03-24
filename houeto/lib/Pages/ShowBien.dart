@@ -78,7 +78,7 @@ void showAlertDialogConfirmDelete(String id) {
           String typeProperty =
               doc.get('propertyType') ?? 'Type non disponible';
           String photo1 = doc.get('photo1') ?? '';
-          double superficie = doc.get('surface') ?? 0.0;
+          double surface = doc.get('surface') ?? 0.0;
           double latitude = doc.get('latitude') ?? 0.0;
           double longitude = doc.get('longitude') ?? 0.0;
           double loyerJour = doc.get('loyerJour') ?? 0.0;
@@ -97,7 +97,7 @@ void showAlertDialogConfirmDelete(String id) {
               loyerJour: loyerJour,
               loyerMois: loyerMois,
               chambres: chambres,
-              superficie: superficie,
+              surface: surface,
             ),
           );
         } catch (e) {
