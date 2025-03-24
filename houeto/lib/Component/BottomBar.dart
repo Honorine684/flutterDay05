@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
 import 'package:houeto/Pages/Home.dart';
+import 'package:houeto/Pages/SeeAllBien.dart';
 import 'package:houeto/Pages/ShowBien.dart';
 
 class Bottombar extends StatefulWidget {
@@ -61,7 +62,7 @@ class _BottombarState extends State<Bottombar> {
             const SizedBox(width: 48), // Espace pour le bouton flottant
             IconButton(
               icon: Icon(
-                Icons.style,
+                Icons.visibility,
                 color: selected == 2 ? Colors.deepOrangeAccent : Colors.grey,
               ),
               onPressed: () {
@@ -109,8 +110,8 @@ class _BottombarState extends State<Bottombar> {
           controller: controller,
           children: const [
             Home(),
-            Showbien(), 
-            Center(child: Text('Style')),
+            Showbien(),
+            Seeallbien() ,
             Center(child: Text('Profile')),
           ],
         ),

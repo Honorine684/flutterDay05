@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:universe/universe.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -25,6 +26,7 @@ class MapsState extends State<Stepdumaps> {
   List<Map<String, dynamic>> nearbyPlaces = [];
   double _zoomLevel = 15;
   Timer? _debounceTimer;
+  final MapController _mapController = MapController();
 
   Future<List<Map<String, dynamic>>> getAddress(String query) async {
     if (query.length < 3) return [];
@@ -58,14 +60,12 @@ class MapsState extends State<Stepdumaps> {
     }
   }
 
-  // Fonction pour récupérer les lieux proches - optimisée
   Future<void> getNearbyPlaces() async {
     setState(() {
       isLoading = true;
     });
 
     try {
-      // D'abord, récupérer les détails de l'adresse actuelle
       final addressResponse = await http.get(
         Uri.parse(
             'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1'),
@@ -207,7 +207,6 @@ class MapsState extends State<Stepdumaps> {
               ),
               child: Stack(
                 children: [
-                  // Carte (avec décalage correct pour l'en-tête)
                   Positioned(
                     top: 0,
                     left: 0,
@@ -215,46 +214,21 @@ class MapsState extends State<Stepdumaps> {
                     bottom: 80,
                     child: Stack(
                       children: [
-                        // Carte de base
-                        U.OpenStreetMap(
-                          center: [latitude, longitude],
-                          type: OpenStreetMapType
-                              .HOT, // Type de carte HOT uniquement
-                          zoom: _zoomLevel,
-                          markers: U.MarkerLayer(
-                            [latitude, longitude],
-                            widget: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 5,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.place,
-                                color: Colors.red,
-                                size: 30,
-                              ),
-                            ),
-                          ),
-                          onTap: (point) async {
-                            if (point != null) {
+                        FlutterMap(
+                          mapController: _mapController,
+                          options: MapOptions(
+                            initialCenter: LatLng(latitude, longitude),
+                            initialZoom: _zoomLevel,
+                            onTap: (tapPosition, tapPoint) async {
                               setModalState(() {
-                                latitude = point.lat;
-                                longitude = point.lng;
+                                latitude = tapPoint.latitude;
+                                longitude = tapPoint.longitude;
                               });
 
-                              // Obtenir l'adresse à partir des coordonnées (reverse geocoding)
                               try {
                                 final response = await http.get(
                                   Uri.parse(
-                                      'https://nominatim.openstreetmap.org/reverse?format=json&lat=${point.lat}&lon=${point.lng}&zoom=18&addressdetails=1'),
+                                    'https://nominatim.openstreetmap.org/reverse?format=json&lat=${tapPoint.latitude}&lon=${tapPoint.longitude}&zoom=18&addressdetails=1'),
                                   headers: {'User-Agent': 'YourAppName'},
                                 );
 
@@ -265,28 +239,74 @@ class MapsState extends State<Stepdumaps> {
                                     searchController.text = address;
                                   });
 
-                                  // Rechercher les lieux à proximité
                                   if (_debounceTimer?.isActive ?? false) {
                                     _debounceTimer!.cancel();
                                   }
                                   _debounceTimer = Timer(
-                                      const Duration(milliseconds: 500), () {
-                                    getNearbyPlaces();
-                                  });
+                                    const Duration(milliseconds: 500), () {
+                                      getNearbyPlaces();
+                                    }
+                                  );
                                 } else {
                                   setModalState(() {
-                                    searchController.text =
-                                        "Latitude: ${point.lat}, Longitude: ${point.lng}";
+                                    searchController.text = 
+                                      "Latitude: ${tapPoint.latitude}, Longitude: ${tapPoint.longitude}";
                                   });
                                 }
                               } catch (e) {
                                 setModalState(() {
-                                  searchController.text =
-                                      "Latitude: ${point.lat}, Longitude: ${point.lng}";
+                                  searchController.text = 
+                                    "Latitude: ${tapPoint.latitude}, Longitude: ${tapPoint.longitude}";
                                 });
                               }
-                            }
-                          },
+                            },
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.houeto.app',
+
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  width: 40,
+                                  height: 40,
+                                  point: LatLng(latitude, longitude),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          blurRadius: 5,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.place,
+                                      color: Colors.red,
+                                      size: 30,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                           
+                            MarkerLayer(
+                              markers: nearbyPlaces.map((place) {
+                                return Marker(
+                                  width: 40,
+                                  height: 40,
+                                  point: LatLng(place['latitude'], place['longitude']),
+                                  child: getPlaceIcon(place['type']),
+                                );
+                              }).toList(),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -327,9 +347,14 @@ class MapsState extends State<Stepdumaps> {
                           latitude = suggestion['latitude'];
                           longitude = suggestion['longitude'];
                           searchController.text = suggestion['adresse'];
-                          _zoomLevel =
-                              17; // Zoom plus près quand une adresse est sélectionnée
+                          _zoomLevel = 17; 
                         });
+                        
+                        
+                        _mapController.move(
+                          LatLng(suggestion['latitude'], suggestion['longitude']), 
+                          _zoomLevel
+                        );
 
                         if (_debounceTimer?.isActive ?? false) {
                           _debounceTimer!.cancel();
@@ -357,7 +382,6 @@ class MapsState extends State<Stepdumaps> {
                     ),
                   ),
 
-                  // Boutons de confirmation et d'annulation
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -397,7 +421,6 @@ class MapsState extends State<Stepdumaps> {
                             child: ElevatedButton(
                               onPressed: () {
                                 setState(() {
-                                  // S'assurer que l'adresse est bien définie
                                   if (searchController.text.isNotEmpty) {
                                     locationAddress = searchController.text;
                                   } else {
@@ -406,7 +429,6 @@ class MapsState extends State<Stepdumaps> {
                                   }
                                 });
 
-                                // Passer les données au parent avec l'adresse correcte
                                 widget.onDataChanged({
                                   'latitude': latitude,
                                   'longitude': longitude,
@@ -434,7 +456,6 @@ class MapsState extends State<Stepdumaps> {
                     ),
                   ),
 
-                  // Info de coordonnées actuelles
                   Positioned(
                     bottom: 90,
                     left: 0,

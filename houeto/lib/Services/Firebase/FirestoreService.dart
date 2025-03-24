@@ -35,7 +35,8 @@ class FirestoreService {
     String photo4,
     String description,
     double latitude,
-    double longitude
+    double longitude,
+    {String statut = "Inocupper"}
   ) async {
     // Ajouter le logement principal
     DocumentReference logementRef = await logement.add({
@@ -68,6 +69,7 @@ class FirestoreService {
       'photo4': photo4,
       'latitude':latitude,
       'longitude':longitude,
+      'statut':statut,
       'Timestamp': Timestamp.now(),
     });
 
@@ -85,4 +87,9 @@ class FirestoreService {
 
     return logementRef;
   }
+  Stream<QuerySnapshot> getLogement(){
+  final logementStream = logement.orderBy('Timestamp',descending: true).snapshots();
+  return logementStream;
+}
+
 }
