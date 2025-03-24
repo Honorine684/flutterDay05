@@ -8,13 +8,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:houeto/Login.dart';
+import 'package:houeto/pageDetails.dart';
 
 
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const LoginPage());
+    await tester.pumpWidget(const PageDetails());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
