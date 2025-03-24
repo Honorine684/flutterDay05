@@ -51,6 +51,7 @@ class Step5State extends State<Step5> {
           controller: condition,
           decoration: const InputDecoration(
             labelText: 'Conditions (Entrez vos conditions d\'admission)',
+            labelStyle: TextStyle(fontSize: 13)
           ),
           maxLines: 3,
         ),

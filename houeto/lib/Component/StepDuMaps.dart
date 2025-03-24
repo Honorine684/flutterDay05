@@ -163,8 +163,8 @@ class MapsState extends State<Stepdumaps> {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: TextFormField(
+    return 
+      TextFormField(
         readOnly: true,
         decoration: InputDecoration(
           labelText: locationAddress,
@@ -179,8 +179,8 @@ class MapsState extends State<Stepdumaps> {
         onTap: () {
           showModal(context);
         },
-      ),
-    );
+      );
+    
   }
 
   void showModal(BuildContext context) {

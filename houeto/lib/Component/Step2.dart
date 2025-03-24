@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 class Step2 extends StatefulWidget {
   final Function(Map<String, dynamic>) onDataChanged;
   final Map<String, dynamic>? initialData;
+  final Map<String, dynamic> initialValues;
+
 
   const Step2({
     super.key,
     required this.onDataChanged,
     this.initialData,
+    this.initialValues = const{}
   });
 
   @override
@@ -55,12 +58,10 @@ class Step2State extends State<Step2> {
   void initState() {
     super.initState();
 
-    // Initialiser les données si elles sont fournies
     if (widget.initialData != null) {
       surfaceController.text = widget.initialData!['surface']?.toString() ?? '';
       yearController.text = widget.initialData!['annee_construction']?.toString() ?? '';
 
-      // Initialiser les compteurs
       for (String key in counters.keys) {
         if (widget.initialData!.containsKey(key)) {
           counters[key] = widget.initialData![key];
@@ -68,7 +69,6 @@ class Step2State extends State<Step2> {
       }
     }
 
-    // Ajouter des écouteurs
     surfaceController.addListener(_updateData);
     yearController.addListener(_updateData);
   }
@@ -105,55 +105,30 @@ class Step2State extends State<Step2> {
           children: [
             Row(
               children: [
-                // Surface
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.blue,
-                          width: 2.0,
-                        ),
-                      ),
-                    ),
-                    child: TextFormField(
-                      controller: surfaceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        icon: Icon(Icons.square_foot),
-                        border: InputBorder.none,
-                        hintText: "Surface (m²)",
-                      ),
-                    ),
-                  ),
+            Expanded(
+              child: TextFormField(
+                controller: surfaceController,
+                decoration: const InputDecoration(
+                  labelText: "Surface (m²)", 
+                  labelStyle: TextStyle(fontSize: 13),
+                  suffixIcon:Icon(Icons.square_foot),
                 ),
-
-                // Année de construction
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.blue,
-                          width: 2.0,
-                        ),
-                      ),
-                    ),
-                    child: TextFormField(
-                      controller: yearController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        icon: Icon(Icons.calendar_today),
-                        border: InputBorder.none,
-                        hintText: "Année de construction",
-                      ),
-                    ),
-                  ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            SizedBox(width: 10,),
+              Expanded(
+              child: TextFormField(
+                controller: yearController,
+                decoration: const InputDecoration(
+                  labelText: "Année de construction",
+                  labelStyle: TextStyle(fontSize: 13),
+                  suffixIcon:Icon(Icons.calendar_today),
                 ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+                
               ],
             ),
 

@@ -19,7 +19,6 @@ class StephoraireState extends State<Stephoraire> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // horaire de disponibilite
         Selectoravailable(
           onDaychanged: (availability) {
             setState(() {

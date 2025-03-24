@@ -39,23 +39,24 @@ class Step4State extends State<Step4> {
   void calculAvance() {
     if (avance.text.isNotEmpty) {
       try {
-      
-        double montantAvance = avance.text.isNotEmpty ? double.parse(avance.text) : 0;
-        double montantCaution = caution.text.isNotEmpty ? double.parse(caution.text) : 0;
-        double montantLoyerMois = loyerMois.text.isNotEmpty ? double.parse(loyerMois.text) : 0;
-        double montantLoyerJour = loyerJour.text.isNotEmpty ? double.parse(loyerJour.text) : 0;
+        double montantAvance =
+            avance.text.isNotEmpty ? double.parse(avance.text) : 0;
+        double montantCaution =
+            caution.text.isNotEmpty ? double.parse(caution.text) : 0;
+        double montantLoyerMois =
+            loyerMois.text.isNotEmpty ? double.parse(loyerMois.text) : 0;
+        double montantLoyerJour =
+            loyerJour.text.isNotEmpty ? double.parse(loyerJour.text) : 0;
 
-       
         double montantTotal = montantAvance * nbreDeMoisAvance;
         total.text = montantTotal.toStringAsFixed(2);
 
-      
         widget.onDataChanged({
           'avance': montantAvance,
           'caution': montantCaution,
           'loyerMois': montantLoyerMois,
           'loyerJour': montantLoyerJour,
-          'nbreDeMoisAvance': nbreDeMoisAvance, 
+          'nbreDeMoisAvance': nbreDeMoisAvance,
           'total': montantTotal,
         });
       } catch (e) {
@@ -79,6 +80,7 @@ class Step4State extends State<Step4> {
                 controller: avance,
                 decoration: const InputDecoration(
                   labelText: 'Avance (Montant)',
+                  labelStyle: TextStyle(fontSize: 13)
                 ),
                 keyboardType: TextInputType.number,
               ),
@@ -89,6 +91,7 @@ class Step4State extends State<Step4> {
                 controller: total,
                 decoration: const InputDecoration(
                   labelText: 'Total',
+                  labelStyle: TextStyle(fontSize: 13)
                 ),
                 keyboardType: TextInputType.number,
                 readOnly: true,
@@ -104,6 +107,7 @@ class Step4State extends State<Step4> {
                 controller: loyerMois,
                 decoration: const InputDecoration(
                   labelText: 'Loyer/mois',
+                  labelStyle: TextStyle(fontSize: 13)
                 ),
                 keyboardType: TextInputType.number,
               ),
@@ -114,6 +118,7 @@ class Step4State extends State<Step4> {
                 controller: loyerJour,
                 decoration: const InputDecoration(
                   labelText: 'Loyer/Jour',
+                  labelStyle: TextStyle(fontSize: 13)
                 ),
                 keyboardType: TextInputType.number,
               ),
@@ -124,14 +129,7 @@ class Step4State extends State<Step4> {
                 controller: caution,
                 decoration: const InputDecoration(
                   labelText: 'Caution',
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ),Expanded(
-              child: TextFormField(
-                controller: caution,
-                decoration: const InputDecoration(
-                  labelText: 'Caution',
+                  labelStyle: TextStyle(fontSize: 13)
                 ),
                 keyboardType: TextInputType.number,
               ),

@@ -43,6 +43,7 @@ class Step7State extends State<Step7> {
           controller: description,
           decoration: const InputDecoration(
             labelText: 'Description (Que voulez-vous rajouter ?)',
+            labelStyle: TextStyle(fontSize: 13)
           ),
           maxLines: 5,
         ),

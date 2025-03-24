@@ -27,123 +27,97 @@ class TypeSelectorState extends State<TypeSelector> {
       'type': 'appartement',
       'icon': Icons.apartment,
       'label': 'Appartement',
-      'color': Colors.blue,
     },
     {
       'type': 'Maison',
       'icon': Icons.home,
       'label': 'Maison',
-      'color': Colors.green,
     },
     {
       'type': 'Studio',
       'icon': Icons.business,
       'label': 'Studio',
-      'color': Colors.amber,
     },
     {
       'type': 'Duplex',
       'icon': Icons.store,
       'label': 'Duplex',
-      'color': Colors.purple,
     },
-    {
-      'type': 'Villa',
-      'icon': Icons.terrain,
-      'label': 'Villa',
-      'color': Colors.brown,
-    },
+
   ];
 
-@override
-Widget build(BuildContext context) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.only(bottom: 12.0),
-        child: Text(
-          'Type de bien',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-      ),
-      // Limiter la hauteur de la GridView
-      SizedBox(
-        height: 200, // Ajustez cette valeur selon vos besoins
-        child: GridView.builder(
-          shrinkWrap: true,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // Nombre de colonnes
-            childAspectRatio: 1.1, // Ratio largeur/hauteur des éléments
-            crossAxisSpacing: 10, // Espacement horizontal
-            mainAxisSpacing: 10, // Espacement vertical
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text(
+            'Type de bien',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-          itemCount: propertyTypes.length,
-          itemBuilder: (context, index) {
-            final type = propertyTypes[index];
+        ),
+        Wrap(
+          spacing: 10, 
+          runSpacing: 10, 
+          children: propertyTypes.map((type) {
             final isSelected = selectedType == type['type'];
-
-            return GestureDetector(
+            
+            return InkWell(
               onTap: () {
                 setState(() {
                   selectedType = type['type'];
                 });
                 widget.onTypeSelected(type['type']);
               },
-              child: AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? type['color'].withOpacity(0.2)
-                      : Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? type['color']
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      type['icon'],
-                      size: 32,
-                      color: isSelected
-                          ? type['color']
-                          : Colors.grey,
+              child: SizedBox(
+                width: 100, 
+                height: 80, 
+                child: Card(
+                  color: isSelected ? Colors.blue.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: isSelected ? Colors.blue : Colors.transparent,
+                      width: 1.5,
                     ),
-                    SizedBox(height: 8),
-                    Flexible(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
+                  ),
+                  elevation: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          type['icon'],
+                          size: 24,
+                          color: isSelected ? Colors.blue : Colors.grey,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
                           type['label'],
                           style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? type['color']
-                                : Colors.grey.shade700,
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? Colors.blue : Colors.grey.shade700,
                           ),
                           textAlign: TextAlign.center,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             );
-          },
+          }).toList(),
         ),
-      ),
-    ],
-  );
-}}
+      ],
+    );
+  }
+}
+
 class Step1 extends StatefulWidget {
   final Function(Map<String, dynamic>) onDataChanged;
   const Step1({super.key, required this.onDataChanged});
@@ -176,59 +150,39 @@ class Step1State extends State<Step1> {
     super.dispose();
   }
 
-@override
-Widget build(BuildContext context) {
-  return SingleChildScrollView(
-    child: Form(
-      key: formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // titre
-          Container(
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.blue,
-                  width: 2.0,
-                ),
-              ),
-            ),
-            child: TextFormField(
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // titre
+            TextFormField(
               controller: titre,
               decoration: const InputDecoration(
-                icon: Icon(Icons.title),
-                border: InputBorder.none,
-                hintText: "Titre propriété",
+                  labelText: 'Titre propriété',
+                  labelStyle: TextStyle(fontSize: 13)),
+            ),
+
+            // type de bien
+            Container(
+              margin: const EdgeInsets.all(8),
+              height: MediaQuery.of(context).size.height*0.3,
+              child: TypeSelector(
+                initialValue: selectedPropertyType,
+                onTypeSelected: (type) {
+                  setState(() {
+                    selectedPropertyType = type;
+                  });
+                  updateData();
+                },
               ),
-              validator: (value) {
-                if (value!.isEmpty) {
-                  return "le titre est obligatoire";
-                } else if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(titre.text)) {
-                  return "Le titre ne peut contenir que des lettres";
-                }
-                return null;
-              },
             ),
-          ),
-        
-          // type de bien
-          Container(
-            margin: const EdgeInsets.all(8),
-            child: TypeSelector(
-              initialValue: selectedPropertyType,
-              onTypeSelected: (type) {
-                setState(() {
-                  selectedPropertyType = type;
-                });
-                updateData(); // Mettre à jour les données quand le type change
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}}
+    );
+  }
+}

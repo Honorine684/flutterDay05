@@ -8,24 +8,23 @@ import 'package:houeto/Component/Step6.dart';
 import 'package:houeto/Component/Step7.dart';
 import 'package:houeto/Component/StepDuMaps.dart';
 import 'package:houeto/Component/Stephoraire.dart';
-import 'package:houeto/JsonModels/JourDisponibilite.dart';
 import 'package:houeto/Pages/ShowBien.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
 
-class Addlogement extends StatefulWidget {
-  const Addlogement({super.key});
+class Editlogement extends StatefulWidget {
+  final String logementId;
+  const Editlogement({super.key,required this.logementId});
 
   @override
-  State<Addlogement> createState() {
-    return AddlogementState();
+  State<Editlogement> createState() {
+    return EditlogementState();
   }
 }
 
-class AddlogementState extends State<Addlogement> {
+class EditlogementState extends State<Editlogement> {
   int initialStep = 0;
   Map<String, dynamic> logementData = {};
 
-  // Collecter les données de chaque étape
   void getStep1Data(Map<String, dynamic> data) {
     setState(() {
       logementData.addAll(data);
@@ -68,7 +67,6 @@ class AddlogementState extends State<Addlogement> {
   @override
   void initState() {
     super.initState();
-    // Initialisation des étapes
     steps = [
       Step(
         title: Text("Informations de base",
@@ -143,7 +141,7 @@ class AddlogementState extends State<Addlogement> {
     return Scaffold(
       appBar: AppBar(
         elevation: 6,
-        title: Text("Ajouter un logement",
+        title: Text("Modifier un logement",
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
       ),
       body: Column(
@@ -202,8 +200,7 @@ class AddlogementState extends State<Addlogement> {
                               ? () async {
                                   print("Données collectées: $logementData");
                                
-                                  addLogement();
-                                  Navigator.push(context, MaterialPageRoute(builder: (context)=> const Showbien()));
+                                  await updateLogement();
                                   print("Logement ajouté avec succès!");
                                 }
                               : details.onStepContinue,
@@ -230,88 +227,50 @@ class AddlogementState extends State<Addlogement> {
     );
   }
 
-  Future<void> addLogement() async {
-    try {
-      String titre = logementData['titre'] ?? '';
-      String adresse = logementData['adresse'] ?? '';
-      String propertyType = logementData['propertyType'] ?? '';
-      double surface =
-          double.tryParse(logementData['surface'].toString()) ?? 0.0;
-      int anneDeConstruction =
-          int.tryParse(logementData['annee_construction'].toString()) ?? 0;
-      int nbreDeChambre =
-          int.tryParse(logementData['chambres'].toString()) ?? 0;
-      int nbreDeCuisine =
-          int.tryParse(logementData['cuisines'].toString()) ?? 0;
-      int nbreDeSalleDeBain =
-          int.tryParse(logementData['salles_de_bain'].toString()) ?? 0;
-      int nbreDeSalons = int.tryParse(logementData['salons'].toString()) ?? 0;
-      int nbreDeTerrasse =
-          int.tryParse(logementData['terrasses'].toString()) ?? 0;
-      int nbreDeBalcon = int.tryParse(logementData['balcons'].toString()) ?? 0;
-      int nbreDeParking = int.tryParse(logementData['parking'].toString()) ?? 0;
-      bool estSanitaire = logementData['estSanitaire'] ?? false;
-      bool estMeuble = logementData['estMeuble'] ?? false;
-      bool estClimatise = logementData['estClimatise'] ?? false;
-      String etat = logementData['etat'] ?? '';
-      double avance = double.tryParse(logementData['avance'].toString()) ?? 0.0;
-      double loyerMois =
-          double.tryParse(logementData['loyerMois'].toString()) ?? 0.0;
-      double loyerJour =
-          double.tryParse(logementData['loyerJour'].toString()) ?? 0.0;
-      double caution =
-          double.tryParse(logementData['caution'].toString()) ?? 0.0;
-      List<Jourdisponibilite> jours = logementData['doctorAvailability'] ?? [];
-      String conditionAdmission = logementData['conditionAdmission'] ?? '';
-      String typeDeBail = logementData['typeDeBail'] ?? '';
-      double fraisVisite =
-          double.tryParse(logementData['fraisVisite'].toString()) ?? 0.0;
-      String photo1 = logementData['photo1'] ?? '';
-      String photo2 = logementData['photo2'] ?? '';
-      String photo3 = logementData['photo3'] ?? '';
-      String photo4 = logementData['photo4'] ?? '';
-      String description = logementData['description'] ?? '';
-      double latitude = double.tryParse(logementData['latitude'].toString()) ?? 0.0;
-      double longitude = double.tryParse(logementData['longitude'].toString()) ?? 0.0;
+  Future<void> updateLogement() async {
+  try {
+    await FirestoreService().updateLogement(
+      widget.logementId, 
+      titre: logementData['titre'],
+      adresse: logementData['adresse'],
+      propertyType: logementData['propertyType'],
+      surface: double.tryParse(logementData['surface'].toString()),
+      anneDeConstruction: int.tryParse(logementData['annee_construction'].toString()),
+      nbreDeChambre: int.tryParse(logementData['chambres'].toString()),
+      nbreDeCuisine: int.tryParse(logementData['cuisines'].toString()),
+      nbreDeSalleDeBain: int.tryParse(logementData['salles_de_bain'].toString()),
+      nbreDeSalons: int.tryParse(logementData['salons'].toString()),
+      nbreDeTerrasse: int.tryParse(logementData['terrasses'].toString()),
+      nbreDeBalcon: int.tryParse(logementData['balcons'].toString()),
+      nbreDeParking: int.tryParse(logementData['parking'].toString()),
+      estSanitaire: logementData['estSanitaire'],
+      estMeuble: logementData['estMeuble'],
+      estClimatise: logementData['estClimatise'],
+      etat: logementData['etat'],
+      avance: double.tryParse(logementData['avance'].toString()),
+      loyerMois: double.tryParse(logementData['loyerMois'].toString()),
+      loyerJour: double.tryParse(logementData['loyerJour'].toString()),
+      caution: double.tryParse(logementData['caution'].toString()),
+      jours: logementData['doctorAvailability'],
+      conditionAdmission: logementData['conditionAdmission'],
+      typeDeBail: logementData['typeDeBail'],
+      fraisVisite: double.tryParse(logementData['fraisVisite'].toString()),
+      photo1: logementData['photo1'],
+      photo2: logementData['photo2'],
+      photo3: logementData['photo3'],
+      photo4: logementData['photo4'],
+      description: logementData['description'],
+      latitude: double.tryParse(logementData['latitude'].toString()),
+      longitude: double.tryParse(logementData['longitude'].toString()),
+    );
 
-      // Ajout du logement
-      await FirestoreService().addLogement(
-        titre,
-        adresse,
-        propertyType,
-        surface,
-        anneDeConstruction,
-        nbreDeChambre,
-        nbreDeCuisine,
-        nbreDeSalleDeBain,
-        nbreDeSalons,
-        nbreDeTerrasse,
-        nbreDeBalcon,
-        nbreDeParking,
-        estSanitaire,
-        estMeuble,
-        estClimatise,
-        etat,
-        avance,
-        loyerMois,
-        loyerJour,
-        caution,
-        jours,
-        conditionAdmission,
-        typeDeBail,
-        fraisVisite,
-        photo1,
-        photo2,
-        photo3,
-        photo4,
-        description,
-        latitude,
-        longitude
-      );
-
-      print("Logement ajouté avec succès !");
-    } catch (e) {
-      print("Erreur lors de l'ajout du logement: $e");
-    }
+    print("Logement modifié avec succès !");
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const Showbien()));
+  } catch (e) {
+    print("Erreur lors de la modification du logement: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Erreur lors de la modification: ${e.toString()}")),
+    );
   }
+}
 }

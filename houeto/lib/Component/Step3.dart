@@ -33,7 +33,7 @@ class Step3State extends State<Step3> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0), // Padding pour éviter que les widgets collent aux bords
+      padding: const EdgeInsets.all(16.0), 
       child: Column(
         children: [
           SizedBox(height: 16),
@@ -44,13 +44,13 @@ class Step3State extends State<Step3> {
               Row(
                 children: [
                   Text(
-                    isSanitaire ? "Oui" : "Non", // Affiche "Oui" ou "Non" en fonction de l'état
+                    isSanitaire ? "Oui" : "Non",
                     style: TextStyle(
                       fontSize: 14,
                       color: isSanitaire ? Colors.blue : Colors.grey,
                     ),
                   ),
-                  SizedBox(width: 8), // Espace entre le texte et le switch
+                  SizedBox(width: 8), 
                   Switch(
                     value: isSanitaire,
                     onChanged: (value) {

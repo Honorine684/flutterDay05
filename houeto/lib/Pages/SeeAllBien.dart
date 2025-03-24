@@ -176,97 +176,124 @@ class SeeallbienState extends State<Seeallbien> {
                       SizedBox(
                         height: 8,
                       ),
-SizedBox(
-  height: 150, // Hauteur fixe de la liste
-  child: ListView.builder(
-    scrollDirection: Axis.horizontal,
-    itemCount: logements.length,
-    itemBuilder: (context, index) {
-      return Container(
-        width: MediaQuery.of(context).size.width * 0.88, // Largeur de la carte
-        margin: const EdgeInsets.symmetric(horizontal: 8), // Marge entre les cartes
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: Colors.white, // Fond blanc pour la carte
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 2,
-              blurRadius: 5,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Image du logement (30% de la largeur)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: logements[index].photo1.isNotEmpty
-                  ? Image.memory(
-                      base64Decode(logements[index].photo1),
-                      width: MediaQuery.of(context).size.width * 0.3, // 30% de la largeur
-                      height: 150, // Hauteur fixe
-                      fit: BoxFit.cover,
-                    )
-                  : Container(
-                      width: MediaQuery.of(context).size.width * 0.3,
-                      height: 150,
-                      color: Colors.grey[300],
-                      child: Icon(Icons.image_not_supported,
-                          size: 50, color: Colors.grey),
-                    ),
-            ),
-
-            const SizedBox(width: 10), 
-
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "${logements[index].titre} - ${logements[index].typeProperty}- En location",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      logements[index].adresse,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.bed,color: Colors.grey,),
-                        Text("${logements[index].chambres.toString()} chambres",style: TextStyle(fontSize: 12,color: Colors.grey),)
-                        ,SizedBox(width: 10,),
-                        Icon(Icons.golf_course,color: Colors.grey,),
-                        Text("${logements[index].superficie.toString()} m2")
-                      ],
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Loyer: ${logements[index].loyerMois} FCFA/mois",
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  ),
-),
-
-                      
+                      SizedBox(
+                        height: 150,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: logements.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              width: MediaQuery.of(context).size.width * 0.88,
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.2),
+                                    spreadRadius: 2,
+                                    blurRadius: 5,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: logements[index].photo1.isNotEmpty
+                                        ? Image.memory(
+                                            base64Decode(
+                                                logements[index].photo1),
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.3,
+                                            height: 150,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.3,
+                                            height: 150,
+                                            color: Colors.grey[300],
+                                            child: Icon(
+                                                Icons.image_not_supported,
+                                                size: 50,
+                                                color: Colors.grey),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            "${logements[index].titre} - ${logements[index].typeProperty}- En location",
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            logements[index].adresse,
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey[600]),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.bed,
+                                                color: Colors.grey,
+                                              ),
+                                              Text(
+                                                "${logements[index].chambres.toString()} chambres",
+                                                style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey),
+                                              ),
+                                              SizedBox(
+                                                width: 10,
+                                              ),
+                                              Icon(
+                                                Icons.golf_course,
+                                                color: Colors.grey,
+                                              ),
+                                              Text(
+                                                  "${logements[index].superficie.toString()} m2")
+                                            ],
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            "Loyer: ${logements[index].loyerMois} FCFA/mois",
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ),
