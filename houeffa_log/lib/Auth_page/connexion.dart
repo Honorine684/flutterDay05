@@ -16,7 +16,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Fonction de connexion par email/mot de passe
   Future<void> _loginUser() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -24,24 +23,22 @@ class _LoginScreenState extends State<LoginScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connexion réussie !')),
-        );
-
-        Navigator.pushReplacementNamed(context, '/home');
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : ${e.toString()}')),
-        );
+        _showError(e.toString());
       }
     }
   }
 
-  // Fonction de connexion avec Google
   Future<void> _signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+      if (googleUser == null) return; // Utilisateur a annulé la connexion
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -49,42 +46,41 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       await _auth.signInWithCredential(credential);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Connexion avec Google réussie !')),
-      );
-
-      Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur Google : ${e.toString()}')),
-      );
+      _showError('Erreur Google : ${e.toString()}');
     }
   }
 
-  // Fonction pour réinitialiser le mot de passe
   Future<void> _forgotPassword() async {
     if (_emailController.text.isNotEmpty) {
       try {
         await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Email de réinitialisation envoyé !')),
-        );
+        _showSuccess('Email de réinitialisation envoyé !');
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : ${e.toString()}')),
-        );
+        _showError(e.toString());
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez renseigner votre email pour réinitialiser le mot de passe')),
-      );
+      _showError('Veuillez renseigner votre email.');
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message, style: TextStyle(color: Colors.red))));
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message, style: TextStyle(color: Colors.green))));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Form(
@@ -93,81 +89,76 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 60),
+                const SizedBox(height: 80),
                 Image.asset(
-                  'assets/images/login.png',  // Remplace par ton image
+                  'assets/images/login.png',
                   height: 150,
                 ),
-                SizedBox(height: 20),
-                Text(
+                const SizedBox(height: 20),
+                const Text(
                   'Connexion',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 30,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 20),
-
-                // Champ Email
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email, color: Colors.orange),
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
-                    if (value!.isEmpty) return 'Veuillez renseigner votre email';
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez renseigner votre email';
+                    }
                     return null;
                   },
                 ),
-                SizedBox(height: 10),
-
-                // Champ Mot de passe
+                const SizedBox(height: 10),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Mot de passe',
                     prefixIcon: Icon(Icons.lock, color: Colors.orange),
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
-                    if (value!.isEmpty) return 'Veuillez renseigner votre mot de passe';
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez renseigner votre mot de passe';
+                    }
                     return null;
                   },
                 ),
-                SizedBox(height: 10),
-
-                // Lien "Mot de passe oublié"
+                const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: _forgotPassword,
-                    child: Text('Mot de passe oublié ?'),
+                    child: const Text('Mot de passe oublié ?'),
                   ),
                 ),
-
-                // Bouton de connexion
                 ElevatedButton(
                   onPressed: _loginUser,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
-                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 12),
                   ),
-                  child: Text(
+                  child: const Text(
                     "Se connecter",
                     style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ),
-                SizedBox(height: 20),
-
-                // Connexion avec Google
+                const SizedBox(height: 20),
                 OutlinedButton.icon(
                   onPressed: _signInWithGoogle,
-                  icon: Icon(Icons.g_translate, color: Colors.red),
-                  label: Text('Continuer avec Google'),
+                  icon: const Icon(Icons.g_translate, color: Colors.red),
+                  label: const Text('Continuer avec Google'),
                 ),
               ],
             ),
