@@ -1,7 +1,8 @@
+// lib/screens/reservation.dart
 import 'package:flutter/material.dart';
 
 class Reservation extends StatefulWidget {
-  const Reservation({Key? key}) : super(key: key);
+  const Reservation({super.key});
 
   @override
   State<Reservation> createState() => _ReservationState();
@@ -33,141 +34,123 @@ class _ReservationState extends State<Reservation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: Row(
-          children: [
-            SizedBox(width: 8),
-            Text('Réservation'),
-          ],
-        ),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              (selectedDay == null || selectedHour == null)
-                  ? "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}"
-                  : "$selectedDay ${selectedDate.year}-${selectedDate.month}-${selectedDate.day} à $selectedHour",
-              style: TextStyle(fontSize: 20),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              child: const Text("Choisir une date"),
-              onPressed: () async {
-                final DateTime? dateTime = await showDatePicker(
-                  context: context,
-                  initialDate: selectedDate,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            (selectedDay == null || selectedHour == null)
+                ? "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}"
+                : "$selectedDay ${selectedDate.year}-${selectedDate.month}-${selectedDate.day} à $selectedHour",
+            style: const TextStyle(fontSize: 20),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            child: const Text("Choisir une date"),
+            onPressed: () async {
+              final DateTime? dateTime = await showDatePicker(
+                context: context,
+                initialDate: selectedDate,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (dateTime != null) {
+                setState(() {
+                  selectedDate = dateTime;
+                  selectedDay = null;
+                  selectedHour = null;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            "Jours disponibles :",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: days.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedDay = days[index];
+                        selectedHour = null;
+                      });
+                    },
+                    child: Chip(
+                      label: Text(days[index]),
+                      backgroundColor: selectedDay == days[index]
+                          ? Colors.deepOrangeAccent
+                          : Colors.grey[300],
+                    ),
+                  ),
                 );
-                if (dateTime != null) {
-                  setState(() {
-                    selectedDate = dateTime;
-                    selectedDay = null;
-                    selectedHour = null;
-                  });
-                }
               },
             ),
-            SizedBox(height: 20),
-            Text(
-              "Jours disponibles :",
+          ),
+          const SizedBox(height: 20),
+          if (selectedDay != null) ...[
+            const Text(
+              "Heures disponibles :",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 10),
-            SizedBox(
-              height: 50,
+            const SizedBox(height: 10),
+            Expanded(
               child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: days.length,
+                itemCount: hours.length,
                 itemBuilder: (context, index) {
-                  return Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedDay = days[index];
-                          selectedHour = null;
-                        });
-                      },
-                      child: Chip(
-                        label: Text(days[index]),
-                        backgroundColor: selectedDay == days[index]
-                            ? Colors.deepOrangeAccent
-                            : Colors.grey[300],
-                      ),
-                    ),
+                  return ListTile(
+                    title: Text(hours[index]),
+                    tileColor: selectedHour == hours[index]
+                        ? Colors.deepOrangeAccent.withOpacity(0.2)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        selectedHour = hours[index];
+                      });
+                    },
                   );
                 },
               ),
             ),
-            SizedBox(height: 20),
-            if (selectedDay != null) ...[
-              Text(
-                "Heures disponibles :",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: hours.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(hours[index]),
-                      tileColor: selectedHour == hours[index]
-                          ? Colors.deepOrangeAccent.withOpacity(0.2)
-                          : null,
-                      onTap: () {
-                        setState(() {
-                          selectedHour = hours[index];
-                        });
-                      },
-                    );
-                  },
+          ],
+          const SizedBox(height: 20),
+          Center(
+            child: GestureDetector(
+              onTap: (selectedDay != null && selectedHour != null)
+                  ? () {
+                      debugPrint(
+                          "Paiement de 5000f confirmé pour $selectedDay ${selectedDate.year}-${selectedDate.month}-${selectedDate.day} à $selectedHour");
+                    }
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                decoration: BoxDecoration(
+                  color: (selectedDay != null && selectedHour != null)
+                      ? Colors.deepOrangeAccent
+                      : Colors.grey,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ),
-            ],
-            SizedBox(height: 20),
-          
-            Center(
-              child: GestureDetector(
-                onTap: (selectedDay != null && selectedHour != null)
-                    ? () {
-                   
-                        print(
-                            "Paiement de 5000f confirmé pour $selectedDay ${selectedDate.year}-${selectedDate.month}-${selectedDate.day} à $selectedHour");
-                      }
-                    : null, 
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  decoration: BoxDecoration(
-                    color: (selectedDay != null && selectedHour != null)
-                        ? Colors.deepOrangeAccent 
-                        : Colors.grey,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "Confirmer et payer 5000f",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                child: const Text(
+                  "Confirmer et payer 5000f",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

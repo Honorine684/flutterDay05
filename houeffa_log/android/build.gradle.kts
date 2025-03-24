@@ -1,18 +1,19 @@
 buildscript {
     repositories {
-        google()        // Déjà présent
-        mavenCentral()  // Déjà présent
+        google()
+        mavenCentral()
     }
     dependencies {
-        // Ajoutez cette ligne pour le plugin Google Services
-        classpath 'com.google.gms:google-services:4.3.15'
+        classpath 'com.android.tools.build:gradle:8.1.0'  // Gradle Android Plugin
+        classpath 'com.google.gms:google-services:4.4.2'  // Dernière version pour Firebase
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0'  // Kotlin pour Android
     }
 }
 
 allprojects {
     repositories {
-        google()        // Déjà présent
-        mavenCentral()  // Déjà présent
+        google()
+        mavenCentral()
     }
 }
 

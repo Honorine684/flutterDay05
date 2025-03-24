@@ -1,9 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:houeffa_log/auth/auth_service.dart';
 import 'package:houeffa_log/auth/sign_up.dart';
-import 'package:houeffa_log/wrapper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _auth = AuthService();
   bool _isLoading = false;
 
- 
   Future<void> _loginWithEmail() async {
     setState(() {
       _isLoading = true;
@@ -28,8 +26,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text,
         _passwordController.text,
       );
-      if (user != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Wrapper()));
+      if (user == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Erreur de connexion")));
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,19 +42,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
- 
   Future<void> _loginWithGoogle() async {
     setState(() {
       _isLoading = true;
     });
     try {
       User? user = await _auth.signInWithGoogle();
-      if (user != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Wrapper()));
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Connexion Google annulée")),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(
+          content: Text(
+            "Erreur lors de la connexion Google : ${e.toString().split(':').last.trim()}",
+          ),
+        ),
       );
     } finally {
       setState(() {
@@ -73,82 +78,106 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Connexion - HouefFa Toit"),
-      ),
+      appBar: AppBar(title: const Text("Connexion - HouefFa Toit")),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: _isLoading
-            ? Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(height: 40),
-                    Text(
-                      "Bienvenue sur HouefFa Toit",
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 40),
-                    TextField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        hintText: "Entrer votre email",
-                        labelText: "Email",
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        hintText: "Entrer votre mot de passe",
-                        labelText: "Mot de passe",
-                        border: OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                    ),
-                    SizedBox(height: 30),
-                    ElevatedButton(
-                      onPressed: _loginWithEmail,
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                        backgroundColor: Colors.deepOrangeAccent,
-                      ),
-                      child: Text("Se connecter", style: TextStyle(color: Colors.white)),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: _loginWithGoogle,
-                      icon: Icon(Icons.g_mobiledata, color: Colors.white),
-                      label: Text("Se connecter avec Google", style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                        backgroundColor: Colors.blue,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text("Pas de compte ? "),
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => SignupScreen()));
-                          },
-                          child: Text(
-                            "S'inscrire",
-                            style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-                          ),
+        padding: const EdgeInsets.all(16.0),
+        child:
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 40),
+                      const Text(
+                        "Bienvenue sur HouefFa Toit",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 40),
+                      TextField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          hintText: "Entrer votre email",
+                          labelText: "Email",
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                          hintText: "Entrer votre mot de passe",
+                          labelText: "Mot de passe",
+                          border: OutlineInputBorder(),
+                        ),
+                        obscureText: true,
+                      ),
+                      const SizedBox(height: 30),
+                      ElevatedButton(
+                        onPressed: _loginWithEmail,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 24,
+                          ),
+                          backgroundColor: Colors.deepOrangeAccent,
+                        ),
+                        child: const Text(
+                          "Se connecter",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: _loginWithGoogle,
+                        icon: const Icon(
+                          Icons.g_mobiledata,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          "Se connecter avec Google",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 24,
+                          ),
+                          backgroundColor: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text("Pas de compte ? "),
+                          InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SignupScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              "S'inscrire",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
       ),
     );
   }
 }
-
