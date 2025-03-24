@@ -12,7 +12,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform
   );
    runApp(MaterialApp(
-   home: PageProfile(),
+   home: PageDetails(),
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       scaffoldBackgroundColor: Colors.white,
