@@ -1,7 +1,8 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:houeffa_log/auth/auth_service.dart';
+
+import 'package:houeffa_log/ui/profil.dart';
 import 'package:houeffa_log/ui/reservation.dart';
 import 'package:houeffa_log/wrapper.dart';
 
@@ -103,60 +104,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
 
-  @override
-  State<ProfilePage> createState() => _ProfilePageState();
-}
 
-class _ProfilePageState extends State<ProfilePage> {
-  final AuthService _auth = AuthService();
-  bool _isLoading = false;
 
-  Future<void> _signOut() async {
-    setState(() => _isLoading = true);
-    try {
-      await _auth.signOut();
-      debugPrint("Déconnexion réussie");
-    } catch (e) {
-      debugPrint("Erreur lors de la déconnexion : $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erreur lors de la déconnexion : $e")),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    debugPrint("Rendu de ProfilePage");
-    return Center(
-      child: _isLoading
-          ? const CircularProgressIndicator()
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Profil", style: TextStyle(fontSize: 24)),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _signOut,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text("Se déconnecter"),
-                ),
-              ],
-            ),
-    );
-  }
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -169,10 +120,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   static final List<Widget> _pages = [
-    const ExplorePage(key: ValueKey("explore")),
-    const Reservation(key: ValueKey("reservation")),
-    const DashboardPage(key: ValueKey("dashboard")),
-    const ProfilePage(key: ValueKey("profile")),
+     ExplorePage(key: ValueKey("explore")),
+     Reservation(key: ValueKey("reservation")),
+      DashboardPage(key: ValueKey("dashboard")),
+     ProfilePage(key: ValueKey("profile")),
   ];
 
   void _onItemTapped(int index) {

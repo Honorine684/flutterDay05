@@ -1,8 +1,9 @@
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeffa_log/auth/auth_service.dart';
 import 'package:houeffa_log/auth/login.dart';
-import 'package:houeffa_log/wrapper.dart'; 
+
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -12,6 +13,8 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _prenomController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _auth = AuthService();
@@ -22,15 +25,18 @@ class _SignupScreenState extends State<SignupScreen> {
       _isLoading = true;
     });
     try {
-      User? user = await _auth.signUpWithEmail(
-        _emailController.text,
-        _passwordController.text,
+      User? user = await _auth.createUserWithEmailAndPassword(
+        nom: _nameController.text,
+        prenom: _prenomController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
       );
       if (user != null) {
-        
         await _auth.sendEmailVerificationLink(user);
-        
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Wrapper()));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Erreur lors de l'inscription")),
+        );
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -45,6 +51,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _prenomController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -54,60 +62,80 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Inscription - HouefFa Toit"),
+        title: const Text("Inscription - HouefFa Toit"),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: _isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(height: 40),
-                    Text(
+                    const SizedBox(height: 40),
+                    const Text(
                       "Créer un compte sur HouefFa Toit",
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
-                    SizedBox(height: 40),
+                    const SizedBox(height: 40),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        hintText: "Entrer votre nom",
+                        labelText: "Nom",
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.text,
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _prenomController,
+                      decoration: const InputDecoration(
+                        hintText: "Entrer votre prénom",
+                        labelText: "Prénom",
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.text,
+                    ),
+                    const SizedBox(height: 20),
                     TextField(
                       controller: _emailController,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: "Entrer votre email",
                         labelText: "Email",
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.emailAddress,
                     ),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     TextField(
                       controller: _passwordController,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: "Entrer votre mot de passe",
                         labelText: "Mot de passe",
                         border: OutlineInputBorder(),
                       ),
                       obscureText: true,
                     ),
-                    SizedBox(height: 30),
+                    const SizedBox(height: 30),
                     ElevatedButton(
                       onPressed: _signup,
                       style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                         backgroundColor: Colors.deepOrangeAccent,
                       ),
-                      child: Text("S'inscrire", style: TextStyle(color: Colors.white)),
+                      child: const Text("S'inscrire", style: TextStyle(color: Colors.white)),
                     ),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text("Déjà un compte ? "),
+                        const Text("Déjà un compte ? "),
                         InkWell(
                           onTap: () {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
                           },
-                          child: Text(
+                          child: const Text(
                             "Se connecter",
                             style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                           ),
