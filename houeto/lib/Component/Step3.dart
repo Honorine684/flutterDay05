@@ -3,31 +3,57 @@ import 'package:houeto/Component/Step3Widget/EtatChoice.dart';
 
 class Step3 extends StatefulWidget {
   final void Function(Map<String, dynamic> data) onDataChanged;
-  const Step3({super.key,required this.onDataChanged});
+  final Map<String, dynamic>? initialData;
+  
+  const Step3({
+    super.key,
+    required this.onDataChanged,
+    this.initialData,
+  });
 
   @override
   Step3State createState() => Step3State();
 }
 
 class Step3State extends State<Step3> {
-  String selectedEtat = 'Neuf';
-  bool isSanitaire = false;
-  bool isMeuble = false;
-  bool estClimatise = false;
-    void sendDataToParent() {
+  late String selectedEtat;
+  late bool isSanitaire;
+  late bool isMeuble;
+  late bool estClimatise;
+
+  void sendDataToParent() {
     Map<String, dynamic> data = {
       'estSanitaire': isSanitaire,
       'estMeuble': isMeuble,
-      'estClimatise':estClimatise,
-      'etat':selectedEtat
+      'estClimatise': estClimatise,
+      'etat': selectedEtat
     };
 
     widget.onDataChanged(data); 
   }
-@override
+
+  @override
   void initState() {
-    sendDataToParent();
+    selectedEtat = widget.initialData?['etat'] ?? 'Neuf';
+    isSanitaire = widget.initialData?['estSanitaire'] ?? false;
+    isMeuble = widget.initialData?['estMeuble'] ?? false;
+    estClimatise = widget.initialData?['estClimatise'] ?? false;
+    
     super.initState();
+    sendDataToParent();
+  }
+
+  @override
+  void didUpdateWidget(covariant Step3 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialData != oldWidget.initialData) {
+      setState(() {
+        selectedEtat = widget.initialData?['etat'] ?? 'Neuf';
+        isSanitaire = widget.initialData?['estSanitaire'] ?? false;
+        isMeuble = widget.initialData?['estMeuble'] ?? false;
+        estClimatise = widget.initialData?['estClimatise'] ?? false;
+      });
+    }
   }
 
   @override
@@ -56,6 +82,7 @@ class Step3State extends State<Step3> {
                     onChanged: (value) {
                       setState(() {
                         isSanitaire = value;
+                        sendDataToParent();
                       });
                     },
                     activeColor: Colors.blue,
@@ -84,6 +111,7 @@ class Step3State extends State<Step3> {
                     onChanged: (value) {
                       setState(() {
                         isMeuble = value;
+                        sendDataToParent();
                       });
                     },
                     activeColor: Colors.blue,
@@ -92,7 +120,7 @@ class Step3State extends State<Step3> {
               ),
             ],
           ),
-        SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -112,6 +140,7 @@ class Step3State extends State<Step3> {
                     onChanged: (value) {
                       setState(() {
                         estClimatise = value;
+                        sendDataToParent();
                       });
                     },
                     activeColor: Colors.blue,
@@ -120,16 +149,16 @@ class Step3State extends State<Step3> {
               ),
             ],
           ),
-          SizedBox(height: 16,),
-      Etatchoice(
-          selectedEtat: selectedEtat,
-          onEtatChanged: (String etat) {
-            setState(() {
-              selectedEtat = etat;
-            });
-            sendDataToParent(); 
-          },
-        ), 
+          SizedBox(height: 16),
+          Etatchoice(
+            selectedEtat: selectedEtat,
+            onEtatChanged: (String etat) {
+              setState(() {
+                selectedEtat = etat;
+                sendDataToParent();
+              });
+            },
+          ), 
         ],
       ),
     );

@@ -64,7 +64,7 @@ class AddlogementState extends State<Addlogement> {
   void getStep9Data(Map<String, dynamic> data) {
     logementData.addAll(data);
   }
-
+ 
   late List<Step> steps;
 
   @override
@@ -331,7 +331,6 @@ class AddlogementState extends State<Addlogement> {
         latitude,
         longitude
       );
-    
 
       print("Logement ajouté avec succès !");
     } catch (e) {

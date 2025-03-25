@@ -201,14 +201,14 @@ void initState() {
                         height: 8,
                       ),
                       SizedBox(
-                        height: 150,
+                        height: 450,
                         child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
+                          scrollDirection: Axis.vertical,
                           itemCount: logements.length,
                           itemBuilder: (context, index) {
                             return Container(
                               width: MediaQuery.of(context).size.width * 0.88,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              margin: const EdgeInsets.symmetric(vertical: 8,),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
                                 color: Colors.white,
@@ -249,7 +249,7 @@ void initState() {
                                                 color: Colors.grey),
                                           ),
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -298,7 +298,7 @@ void initState() {
                                                 color: Colors.grey,
                                               ),
                                               Text(
-                                                  "${logements[index].surface.toString()} m²")
+                                                  "${logements[index].surface.toString()} m²",overflow: TextOverflow.ellipsis,)
                                             ],
                                           ),
                                           SizedBox(height: 4),

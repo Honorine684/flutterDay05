@@ -2,36 +2,47 @@ import 'package:flutter/material.dart';
 
 class Step7 extends StatefulWidget {
   final void Function(Map<String, dynamic> data) onDataChanged;
-  const Step7({super.key, required this.onDataChanged});
+  final Map<String, dynamic>? initialData;
+  
+  const Step7({
+    super.key, 
+    required this.onDataChanged,
+    this.initialData,
+  });
 
   @override
-  State<Step7> createState() {
-    return Step7State();
-  }
+  State<Step7> createState() => Step7State();
 }
 
 class Step7State extends State<Step7> {
-  final description = TextEditingController();
+  late final TextEditingController description;
 
   @override
   void initState() {
     super.initState();
-    description.addListener(sendDataToParent); 
+    description = TextEditingController(text: widget.initialData?['description'] ?? '');
+    description.addListener(sendDataToParent);
+  }
+
+  @override
+  void didUpdateWidget(covariant Step7 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialData != oldWidget.initialData) {
+      description.text = widget.initialData?['description'] ?? '';
+    }
   }
 
   @override
   void dispose() {
-    description.removeListener(sendDataToParent); 
+    description.removeListener(sendDataToParent);
     description.dispose();
     super.dispose();
   }
 
   void sendDataToParent() {
-    Map<String, dynamic> data = {
+    widget.onDataChanged({
       'description': description.text, 
-    };
-
-    widget.onDataChanged(data); 
+    });
   }
 
   @override

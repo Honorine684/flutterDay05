@@ -93,7 +93,6 @@ class FirestoreService {
   }
   Stream<QuerySnapshot> getLogement(String proprietaireId){
   final logementStream = logement.where('proprietaireId', isEqualTo: proprietaireId)
-  .orderBy('Timestamp',descending: true)
   .snapshots();
   return logementStream;
 }
@@ -131,13 +130,13 @@ Future<void> updateLogement(
     String? description,
     double? latitude,
     double? longitude,
-    String? statut,
+    String? statut
   }) async {
     
   Map<String, dynamic> updateData = {
-    'timestamp': Timestamp.now(),
+    'Timestamp': Timestamp.now(),
   };
-
+  
   if (titre != null) updateData['titre'] = titre;
   if (adresse != null) updateData['adresse'] = adresse;
   if (propertyType != null) updateData['propertyType'] = propertyType;
@@ -189,5 +188,6 @@ Future<void> updateLogement(
 Future<void> deleteLogement(String idLogement)async{
   return logement.doc(idLogement).delete();
 }
+
 
 }

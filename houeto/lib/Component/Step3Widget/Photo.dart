@@ -4,35 +4,55 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 
 class Photo extends StatefulWidget {
-  const Photo({super.key, required this.onPhotosChanged});
-  
+  final List<String?>? initialPhotos;
   final void Function(List<String?> paths) onPhotosChanged;
+  
+  const Photo({
+    super.key, 
+    required this.onPhotosChanged,
+    this.initialPhotos,
+  });
   
   @override
   State<Photo> createState() => PhotoState();
 }
 
 class PhotoState extends State<Photo> {
-  final List<File?> images = List.filled(4, null);
-  final List<String?> base64Images = List.filled(4, null);
+  late final List<File?> images;
+  late final List<String?> base64Images;
   
+  @override
+  void initState() {
+    super.initState();
+    // Initialisation avec 4 slots
+    images = List.filled(4, null);
+    base64Images = List.filled(4, null);
+    
+    // Chargement des images initiales si fournies
+    if (widget.initialPhotos != null) {
+      for (int i = 0; i < widget.initialPhotos!.length && i < 4; i++) {
+        if (widget.initialPhotos![i] != null) {
+          base64Images[i] = widget.initialPhotos![i];
+        }
+      }
+    }
+  }
+
   Future pickImage(int index) async {
     final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedImage == null) {
-      return;
-    }
+    if (pickedImage == null) return;
     
     final imageTemporary = File(pickedImage.path);
     
-    // Vérifier la taille de l'image (8 Mo = 8 * 1024 * 1024 octets)
+    // Vérification taille de l'image (8 Mo max)
     final fileSize = await imageTemporary.length();
     if (fileSize > 8 * 1024 * 1024) {
-      // Afficher une alerte si l'image dépasse 8 Mo
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Image trop volumineuse'),
-          content: const Text('L\'image sélectionnée dépasse 8 Mo. Veuillez choisir une image moins volumineuse.'),
+          content: const Text('L\'image dépasse 8 Mo. Veuillez choisir une image moins volumineuse.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -51,10 +71,11 @@ class PhotoState extends State<Photo> {
       return;
     }
     
-    // Encoder l'image en base64
+    // Encodage en base64
     final bytes = await imageTemporary.readAsBytes();
     final base64 = base64Encode(bytes);
     
+    if (!mounted) return;
     setState(() {
       images[index] = imageTemporary;
       base64Images[index] = base64;
@@ -67,29 +88,40 @@ class PhotoState extends State<Photo> {
     setState(() {
       images[index] = null;
       base64Images[index] = null;
-      widget.onPhotosChanged(base64Images);
     });
+    widget.onPhotosChanged(base64Images);
   }
-    Widget buildImageSlot(int index) {
+
+  Widget buildImageSlot(int index) {
+    final hasImage = base64Images[index] != null;
+    
     return Container(
       width: double.infinity,
-      height: 100, 
-      margin: const EdgeInsets.all(4), 
+      height: 100,
+      margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: images[index] != null
+      child: hasImage
           ? Stack(
               fit: StackFit.expand,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    images[index]!,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+                images[index] != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          images[index]!,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(
+                          base64Decode(base64Images[index]!),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                 Positioned(
                   top: 5,
                   right: 5,
@@ -116,7 +148,7 @@ class PhotoState extends State<Photo> {
                   Icon(Icons.add_photo_alternate, size: 24, color: Colors.blue.shade300),
                   const SizedBox(height: 4),
                   Text("Photo ${index + 1}", 
-                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                 ],
               ),
             ),

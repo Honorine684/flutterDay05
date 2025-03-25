@@ -8,25 +8,60 @@ import 'dart:async';
 
 class Stepdumaps extends StatefulWidget {
   final void Function(Map<String, dynamic> data) onDataChanged;
-
-  const Stepdumaps({super.key, required this.onDataChanged});
+  final Map<String, dynamic>? initialData;
+  
+  const Stepdumaps({
+    super.key, 
+    required this.onDataChanged,
+    this.initialData,
+  });
 
   @override
-  State<Stepdumaps> createState() {
-    return MapsState();
-  }
+  State<Stepdumaps> createState() => MapsState();
 }
 
 class MapsState extends State<Stepdumaps> {
-  double latitude = 6.3676953;
-  double longitude = 2.4252507;
-  String locationAddress = "Cliquer ici pour choisir une adresse";
+  late double latitude;
+  late double longitude;
+  late String locationAddress;
   final TextEditingController searchController = TextEditingController();
   bool isLoading = false;
   List<Map<String, dynamic>> nearbyPlaces = [];
   double _zoomLevel = 15;
   Timer? _debounceTimer;
   final MapController _mapController = MapController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialisation avec les valeurs par défaut ou celles fournies
+    latitude = widget.initialData?['latitude'] ?? 6.3676953;
+    longitude = widget.initialData?['longitude'] ?? 2.4252507;
+    locationAddress = widget.initialData?['adresse'] ?? "Cliquer ici pour choisir une adresse";
+    
+    if (widget.initialData != null && widget.initialData!['latitude'] != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(LatLng(latitude, longitude), _zoomLevel);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant Stepdumaps oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialData != oldWidget.initialData) {
+      setState(() {
+        latitude = widget.initialData?['latitude'] ?? 6.3676953;
+        longitude = widget.initialData?['longitude'] ?? 2.4252507;
+        locationAddress = widget.initialData?['adresse'] ?? "Cliquer ici pour choisir une adresse";
+      });
+      if (widget.initialData != null && widget.initialData!['latitude'] != null) {
+        _mapController.move(LatLng(latitude, longitude), _zoomLevel);
+      }
+    }
+  }
+
+
 
   Future<List<Map<String, dynamic>>> getAddress(String query) async {
     if (query.length < 3) return [];
@@ -60,7 +95,7 @@ class MapsState extends State<Stepdumaps> {
     }
   }
 
-  Future<void> getNearbyPlaces() async {
+    Future<void> getNearbyPlaces() async {
     setState(() {
       isLoading = true;
     });
@@ -163,31 +198,28 @@ class MapsState extends State<Stepdumaps> {
 
   @override
   Widget build(BuildContext context) {
-    return 
-      TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(
-          labelText: locationAddress,
-          labelStyle: const TextStyle(color: Colors.blue),
-          suffixIcon: IconButton(
-            onPressed: () {
-              showModal(context);
-            },
-            icon: const Icon(Icons.location_pin, color: Colors.red),
-          ),
+    return TextFormField(
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: locationAddress,
+        labelStyle: const TextStyle(color: Colors.blue),
+        suffixIcon: IconButton(
+          onPressed: () {
+            showModal(context);
+          },
+          icon: const Icon(Icons.location_pin, color: Colors.red),
         ),
-        onTap: () {
-          showModal(context);
-        },
-      );
-    
+      ),
+      onTap: () {
+        showModal(context);
+      },
+    );
   }
 
   void showModal(BuildContext context) {
-    searchController.text =
-        locationAddress != "Cliquer ici pour choisir une adresse"
-            ? locationAddress
-            : "";
+    searchController.text = locationAddress != "Cliquer ici pour choisir une adresse"
+        ? locationAddress
+        : "";
 
     showModalBottomSheet(
       context: context,
@@ -265,7 +297,6 @@ class MapsState extends State<Stepdumaps> {
                             TileLayer(
                               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                               userAgentPackageName: 'com.houeto.app',
-
                             ),
                             MarkerLayer(
                               markers: [
@@ -295,7 +326,6 @@ class MapsState extends State<Stepdumaps> {
                                 ),
                               ],
                             ),
-                           
                             MarkerLayer(
                               markers: nearbyPlaces.map((place) {
                                 return Marker(
@@ -311,7 +341,6 @@ class MapsState extends State<Stepdumaps> {
                       ],
                     ),
                   ),
-
                   Positioned(
                     top: 16,
                     left: 16,

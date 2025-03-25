@@ -21,6 +21,16 @@ class TypeSelectorState extends State<TypeSelector> {
     super.initState();
     selectedType = widget.initialValue;
   }
+  @override
+void didUpdateWidget(covariant TypeSelector oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  if (widget.initialValue != oldWidget.initialValue) {
+    setState(() {
+      selectedType = widget.initialValue;
+    });
+  }
+}
+
 
   final List<Map<String, dynamic>> propertyTypes = [
     {
@@ -120,7 +130,13 @@ class TypeSelectorState extends State<TypeSelector> {
 
 class Step1 extends StatefulWidget {
   final Function(Map<String, dynamic>) onDataChanged;
-  const Step1({super.key, required this.onDataChanged});
+  final Map<String, dynamic>? initialData;
+
+  const Step1({
+    super.key, 
+    required this.onDataChanged,
+    this.initialData,
+  });
 
   @override
   State<Step1> createState() => Step1State();
@@ -128,8 +144,30 @@ class Step1 extends StatefulWidget {
 
 class Step1State extends State<Step1> {
   final formKey = GlobalKey<FormState>();
-  final titre = TextEditingController();
+  late TextEditingController titre;
   String? selectedPropertyType;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    titre = TextEditingController(text: widget.initialData?['titre'] ?? '');
+    selectedPropertyType = widget.initialData?['propertyType'];
+    
+    titre.addListener(updateData);
+  }
+
+  @override
+void didUpdateWidget(covariant Step1 oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  if (widget.initialData != oldWidget.initialData) {
+    setState(() {
+      titre.text = widget.initialData?['titre'] ?? '';
+      selectedPropertyType = widget.initialData?['propertyType'];
+    });
+  }
+}
+
 
   void updateData() {
     widget.onDataChanged({
@@ -139,14 +177,9 @@ class Step1State extends State<Step1> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    titre.addListener(updateData);
-  }
-
-  @override
   void dispose() {
     titre.removeListener(updateData);
+    titre.dispose();
     super.dispose();
   }
 
@@ -158,18 +191,26 @@ class Step1State extends State<Step1> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // titre
+            // Champ Titre
             TextFormField(
               controller: titre,
               decoration: const InputDecoration(
-                  labelText: 'Titre propriété',
-                  labelStyle: TextStyle(fontSize: 13)),
+                labelText: 'Titre propriété',
+                labelStyle: TextStyle(fontSize: 13),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Veuillez entrer un titre';
+                }
+                return null;
+              },
             ),
+            const SizedBox(height: 20),
 
-            // type de bien
+            // Sélecteur de type
             Container(
               margin: const EdgeInsets.all(8),
-              height: MediaQuery.of(context).size.height*0.3,
+              height: MediaQuery.of(context).size.height * 0.3,
               child: TypeSelector(
                 initialValue: selectedPropertyType,
                 onTypeSelected: (type) {

@@ -3,24 +3,28 @@ import 'package:houeto/Component/Step5Widget/BailChoice.dart';
 
 class Step5 extends StatefulWidget {
   final void Function(Map<String, dynamic> data) onDataChanged;
-  const Step5({super.key, required this.onDataChanged});
+  final Map<String, dynamic>? initialData;
+  
+  const Step5({
+    super.key, 
+    required this.onDataChanged,
+    this.initialData,
+  });
 
   @override
-  State<Step5> createState() {
-    return Step5State();
-  }
+  State<Step5> createState() => Step5State();
 }
 
 class Step5State extends State<Step5> {
-  String selectedBail = 'Mensuel';
-  final condition = TextEditingController();
-  final fraisVisite = TextEditingController();
+  late String selectedBail;
+  late final TextEditingController condition;
+  late final TextEditingController fraisVisite;
 
   void sendDataToParent() {
     double fraisVisiteValue = double.tryParse(fraisVisite.text) ?? 0.0;
 
     Map<String, dynamic> data = {
-      'fraisVisite': fraisVisiteValue, 
+      'fraisVisite': fraisVisiteValue,
       'conditionAdmission': condition.text,
       'typeDeBail': selectedBail,
     };
@@ -31,14 +35,35 @@ class Step5State extends State<Step5> {
   @override
   void initState() {
     super.initState();
+    selectedBail = widget.initialData?['typeDeBail'] ?? 'Mensuel';
+    condition = TextEditingController(text: widget.initialData?['conditionAdmission'] ?? '');
+    fraisVisite = TextEditingController(text: widget.initialData?['fraisVisite']?.toString() ?? '');
+
+    // Ajout des écouteurs
     condition.addListener(sendDataToParent);
     fraisVisite.addListener(sendDataToParent);
   }
 
   @override
+  void didUpdateWidget(covariant Step5 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Mise à jour seulement si les données initiales changent
+    if (widget.initialData != oldWidget.initialData) {
+      setState(() {
+        selectedBail = widget.initialData?['typeDeBail'] ?? 'Mensuel';
+        condition.text = widget.initialData?['conditionAdmission'] ?? '';
+        fraisVisite.text = widget.initialData?['fraisVisite']?.toString() ?? '';
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    // Nettoyage des écouteurs
     condition.removeListener(sendDataToParent);
     fraisVisite.removeListener(sendDataToParent);
+    condition.dispose();
+    fraisVisite.dispose();
     super.dispose();
   }
 
@@ -51,7 +76,7 @@ class Step5State extends State<Step5> {
           controller: condition,
           decoration: const InputDecoration(
             labelText: 'Conditions (Entrez vos conditions d\'admission)',
-            labelStyle: TextStyle(fontSize: 13)
+            labelStyle: TextStyle(fontSize: 13),
           ),
           maxLines: 3,
         ),
@@ -65,7 +90,7 @@ class Step5State extends State<Step5> {
                   setState(() {
                     selectedBail = bail;
                   });
-                  sendDataToParent();
+                  sendDataToParent(); // Envoie des données après chaque sélection
                 },
               ),
             ),
@@ -77,9 +102,6 @@ class Step5State extends State<Step5> {
                   labelText: 'Frais de visite',
                 ),
                 keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  sendDataToParent();
-                },
               ),
             ),
           ],

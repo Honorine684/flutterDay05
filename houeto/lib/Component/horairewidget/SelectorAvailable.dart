@@ -3,10 +3,12 @@ import 'package:houeto/JsonModels/Creneau.dart';
 import 'package:houeto/JsonModels/JourDisponibilite.dart';
 
 class Selectoravailable extends StatefulWidget {
+    final List<Jourdisponibilite>? initialAvailability;
   final Function(List<Jourdisponibilite>) onDaychanged;
   const Selectoravailable({
     super.key,
-    required this.onDaychanged
+    required this.onDaychanged,
+    this.initialAvailability,
   });
 
   @override
