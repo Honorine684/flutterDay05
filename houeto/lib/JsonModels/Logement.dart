@@ -10,6 +10,7 @@ class Logement {
   final double loyerMois;
   final double surface;
   final int chambres;
+  final String statut;
   Logement({
     required this.id,
     required this.adresse,
@@ -21,6 +22,7 @@ class Logement {
     required this.loyerJour,
     required this.loyerMois,
     required this.chambres,
-    required this.surface
+    required this.surface,
+    required this.statut
   });
 }

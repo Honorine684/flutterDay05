@@ -104,7 +104,8 @@ void showAlertDialogConfirmDelete(String id) {
           double loyerJour = doc.get('loyerJour') ?? 0.0;
           double loyerMois = doc.get('loyerMois') ?? 0.0;
           int chambres = doc.get('chambres') ?? 0;
-
+           String statut =
+              doc.get('statut') ?? 'statut non disponible';
           listeLogement.add(
             Logement(
               id: logementId,
@@ -118,6 +119,7 @@ void showAlertDialogConfirmDelete(String id) {
               loyerMois: loyerMois,
               chambres: chambres,
               surface: surface,
+              statut: statut
             ),
           );
         } catch (e) {
@@ -214,7 +216,7 @@ void showAlertDialogConfirmDelete(String id) {
                                   Text(
                                     getFirstTwoWords(logements[index].adresse),
                                     style: TextStyle(
-                                        fontSize: 18,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.bold),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

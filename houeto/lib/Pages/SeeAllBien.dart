@@ -52,7 +52,8 @@ class SeeallbienState extends State<Seeallbien> {
         double loyerJour = doc.get('loyerJour') ?? 0.0;
         double loyerMois = doc.get('loyerMois') ?? 0.0;
         int chambres = doc.get('chambres') ?? 0;
-
+         String statut =
+              doc.get('statut') ?? 'statut non disponible';
         listeLogement.add(
           Logement(
             id: logementId,
@@ -66,6 +67,7 @@ class SeeallbienState extends State<Seeallbien> {
             loyerMois: loyerMois,
             chambres: chambres,
             surface: surface,
+            statut: statut
           ),
         );
       } catch (e) {
@@ -261,9 +263,9 @@ void initState() {
                                             MainAxisAlignment.center,
                                         children: [
                                           Text(
-                                            "${logements[index].titre} - ${logements[index].typeProperty}- En location",
+                                            "${logements[index].titre} - ${logements[index].typeProperty} - ${logements[index].statut}",
                                             style: TextStyle(
-                                                fontSize: 16,
+                                                fontSize: 15,
                                                 fontWeight: FontWeight.bold),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,

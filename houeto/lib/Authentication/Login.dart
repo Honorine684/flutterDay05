@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Authentication/Signup.dart';
+import 'package:houeto/Component/BottomBar.dart';
 import 'package:houeto/Services/Firebase/auth.dart';
 
 class ConnexionPage extends StatefulWidget {
@@ -163,35 +164,51 @@ class _ConnexionpageState extends State<ConnexionPage> {
               ],
             ),
             const SizedBox(height: 24),
-                    SizedBox(
-              height: 50, 
-              child: OutlinedButton(
-                onPressed: () {
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  side: BorderSide(color: Colors.grey.shade300),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/images/google.jpg', 
-                      height: 50, 
-                      width: 50,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Continuer avec Google',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                   SizedBox(
+  height: 50,
+  child: OutlinedButton(
+    onPressed: () async {
+      
+      try {
+        await Auth().signInWithGoogle();
+
+
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (context) => const Bottombar())
+        );
+      } catch (e) {
+        print("voici le probleme $e");
+        /*ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur de connexion : ${e.toString()}'),
+            
+            backgroundColor: Colors.red,
+          ),
+        );*/
+      }
+    },
+    style: OutlinedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      side: BorderSide(color: Colors.grey.shade300),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Image.asset(
+          'assets/images/google.jpg', 
+          height: 24,
+          width: 24,
+        ),
+        const SizedBox(width: 10),
+        const Text('Connexion avec Google'),
+      ],
+    ),
+  ),
+),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
