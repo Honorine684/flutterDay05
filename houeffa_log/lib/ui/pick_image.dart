@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class PickImage extends StatefulWidget {
   const PickImage({Key? key}) : super(key: key);
@@ -12,30 +14,42 @@ class PickImage extends StatefulWidget {
 class _PickImageState extends State<PickImage> {
   File? _image;
 
+  Future<String?> _compressAndEncodeImage(File file) async {
+    final filePath = file.path;
+    final lastIndex = filePath.lastIndexOf('.');
+    final outPath = "${filePath.substring(0, lastIndex)}_compressed.jpg";
+
+    final compressedFile = await FlutterImageCompress.compressAndGetFile(
+      filePath,
+      outPath,
+      quality: 85,
+    );
+
+    if (compressedFile == null) return null;
+
+    // Convertir en Base64
+    final bytes = await File(compressedFile.path).readAsBytes();
+    return base64Encode(bytes);
+  }
+
   Future<void> getImage(ImageSource source) async {
     try {
       final XFile? pickedImage = await ImagePicker().pickImage(source: source);
       if (pickedImage == null) return;
 
       final imageFile = File(pickedImage.path);
-
       setState(() {
         _image = imageFile;
       });
+
+      final base64Image = await _compressAndEncodeImage(imageFile);
+      if (base64Image != null) {
+        Navigator.pop(context, base64Image);
+      }
     } catch (e) {
-      print('Erreur lors de la sélection de l’image : $e');
+      print('Erreur lors de la sélection ou compression : $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur : $e')),
-      );
-    }
-  }
-
-  void _confirmImage() {
-    if (_image != null) {
-      Navigator.pop(context, _image);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner une image d’abord')),
       );
     }
   }
@@ -72,14 +86,6 @@ class _PickImageState extends State<PickImage> {
             ElevatedButton(
               onPressed: () => getImage(ImageSource.camera),
               child: const Text('Choisir depuis la caméra'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _confirmImage,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
-              child: const Text('Confirmer'),
             ),
           ],
         ),

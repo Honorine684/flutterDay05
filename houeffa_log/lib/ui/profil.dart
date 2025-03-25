@@ -1,10 +1,9 @@
-import 'dart:io';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:houeffa_log/auth/auth_service.dart';
-
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:houeffa_log/ui/pick_image.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -16,7 +15,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final AuthService _auth = AuthService();
-  File? _localProfileImage;
+  String? _base64ProfileImage;
 
   Future<void> _signOut(BuildContext context) async {
     try {
@@ -30,29 +29,15 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<File?> _compressImage(File file) async {
-    final filePath = file.path;
-    final lastIndex = filePath.lastIndexOf('.');
-    final outPath = "${filePath.substring(0, lastIndex)}_compressed.jpg";
-
-    final compressedFile = await FlutterImageCompress.compressAndGetFile(
-      filePath,
-      outPath,
-      quality: 85, 
-    );
-
-    return compressedFile != null ? File(compressedFile.path) : file;
-  }
-
   Future<void> _updateProfileImage() async {
-    final pickedImage = await Navigator.push(
+    final base64Image = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const PickImage()),
     );
 
-    if (pickedImage != null && pickedImage is File) {
+    if (base64Image != null && base64Image is String) {
       setState(() {
-        _localProfileImage = pickedImage;
+        _base64ProfileImage = base64Image;
       });
 
       showDialog(
@@ -65,21 +50,13 @@ class _ProfilePageState extends State<ProfilePage> {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) throw "Utilisateur non connecté";
 
-        final compressedImage = await _compressImage(pickedImage);
+        
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'profileImage': base64Image,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
 
-     
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('profile_images/${user.uid}.jpg');
-        await storageRef.putFile(compressedImage!);
-        final downloadUrl = await storageRef.getDownloadURL();
-
-      
-        await user.updatePhotoURL(downloadUrl);
-        await user.reload();
-
-        debugPrint("Photo de profil enregistrée : $downloadUrl");
-        setState(() {});
+        debugPrint("Image Base64 enregistrée dans Firestore");
       } catch (e) {
         debugPrint("Erreur lors de l’enregistrement : $e");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -96,20 +73,15 @@ class _ProfilePageState extends State<ProfilePage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw "Utilisateur non connecté";
 
-    
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('profile_images/${user.uid}.jpg');
-      await storageRef.delete();
-
-    
-      await user.updatePhotoURL(null);
-      await user.reload();
+      
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        'profileImage': FieldValue.delete(),
+      });
 
       setState(() {
-        _localProfileImage = null;
+        _base64ProfileImage = null;
       });
-      debugPrint("Photo de profil supprimée");
+      debugPrint("Image de profil supprimée");
     } catch (e) {
       debugPrint("Erreur lors de la suppression : $e");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,15 +95,15 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       body: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+        builder: (context, authSnapshot) {
+          if (authSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
+          if (authSnapshot.hasError) {
             return const Center(child: Text("Erreur de chargement du profil"));
           }
 
-          final User? user = snapshot.data;
+          final User? user = authSnapshot.data;
 
           if (user == null) {
             return const Center(
@@ -142,127 +114,142 @@ class _ProfilePageState extends State<ProfilePage> {
             );
           }
 
-          return CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 200.0,
-                floating: false,
-                pinned: true,
-                flexibleSpace: FlexibleSpaceBar(
-                  title: const Text(
-                    "Profil",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.deepOrangeAccent, Colors.orangeAccent],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
+          return StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+            builder: (context, firestoreSnapshot) {
+              if (firestoreSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final data = firestoreSnapshot.data?.data() as Map<String, dynamic>?;
+              final String? storedBase64Image = data?['profileImage'];
+
+              
+              if (storedBase64Image != null && _base64ProfileImage == null) {
+                _base64ProfileImage = storedBase64Image;
+              }
+
+              return CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    expandedHeight: 200.0,
+                    floating: false,
+                    pinned: true,
+                    flexibleSpace: FlexibleSpaceBar(
+                      title: const Text(
+                        "Profil",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
-                      Center(
-                        child: Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            CircleAvatar(
-                              radius: 60,
-                              backgroundColor: Colors.white,
-                              backgroundImage: _localProfileImage != null
-                                  ? FileImage(_localProfileImage!)
-                                  : (user.photoURL != null
-                                      ? NetworkImage(user.photoURL!)
-                                      : const AssetImage('assets/default_profile.png')) as ImageProvider,
+                      background: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.deepOrangeAccent, Colors.orangeAccent],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                             ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
+                          ),
+                          Center(
+                            child: Stack(
+                              alignment: Alignment.bottomRight,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.camera_alt, color: Colors.white),
-                                  onPressed: _updateProfileImage,
+                                CircleAvatar(
+                                  radius: 60,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: _base64ProfileImage != null
+                                      ? MemoryImage(base64Decode(_base64ProfileImage!))
+                                      : const AssetImage('assets/default_profile.png') as ImageProvider,
                                 ),
-                                if (user.photoURL != null || _localProfileImage != null)
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.white),
-                                    onPressed: _deleteProfileImage,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.camera_alt, color: Colors.black),
+                                      onPressed: _updateProfileImage,
+                                    ),
+                                    if (_base64ProfileImage != null)
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.black),
+                                        onPressed: _deleteProfileImage,
+                                      ),
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildProfileItem(
-                                Icons.person,
-                                "Nom",
-                                user.displayName ?? "Non défini",
-                              ),
-                              _buildProfileItem(
-                                Icons.email,
-                                "Email",
-                                user.email ?? "Non défini",
-                              ),
-                              _buildProfileItem(
-                                Icons.calendar_today,
-                                "Compte créé le",
-                                user.metadata.creationTime != null
-                                    ? "${user.metadata.creationTime!.day}/${user.metadata.creationTime!.month}/${user.metadata.creationTime!.year}"
-                                    : "Inconnu",
-                              ),
-                              _buildProfileItem(
-                                Icons.access_time,
-                                "Dernière connexion",
-                                user.metadata.lastSignInTime != null
-                                    ? "${user.metadata.lastSignInTime!.day}/${user.metadata.lastSignInTime!.month}/${user.metadata.lastSignInTime!.year}"
-                                    : "Inconnu",
-                              ),
-                            ],
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 30),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: () => _signOut(context),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                            backgroundColor: Colors.redAccent,
-                            foregroundColor: Colors.white,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Card(
+                            elevation: 4,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildProfileItem(
+                                    Icons.person,
+                                    "Nom",
+                                    user.displayName ?? "Non défini",
+                                  ),
+                                  _buildProfileItem(
+                                    Icons.email,
+                                    "Email",
+                                    user.email ?? "Non défini",
+                                  ),
+                                  _buildProfileItem(
+                                    Icons.calendar_today,
+                                    "Compte créé le",
+                                    user.metadata.creationTime != null
+                                        ? "${user.metadata.creationTime!.day}/${user.metadata.creationTime!.month}/${user.metadata.creationTime!.year}"
+                                        : "Inconnu",
+                                  ),
+                                  _buildProfileItem(
+                                    Icons.access_time,
+                                    "Dernière connexion",
+                                    user.metadata.lastSignInTime != null
+                                        ? "${user.metadata.lastSignInTime!.day}/${user.metadata.lastSignInTime!.month}/${user.metadata.lastSignInTime!.year}"
+                                        : "Inconnu",
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          child: const Text("Se déconnecter"),
-                        ),
+                          const SizedBox(height: 30),
+                          Center(
+                            child: ElevatedButton(
+                              onPressed: () => _signOut(context),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                backgroundColor: Colors.redAccent,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text("Se déconnecter"),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           );
         },
       ),
