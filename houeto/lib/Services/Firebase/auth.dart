@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -28,7 +27,7 @@ class Auth{
     }
   }  
 
-Future<void> SigninWithEmailAndPassword(String email,String password) async{
+Future<void> signinWithEmailAndPassword(String email,String password) async{
   await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
 } 
 // logout

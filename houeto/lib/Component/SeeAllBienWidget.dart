@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart'; 
@@ -23,10 +24,23 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
     loadLogement();
   }
 
-  void loadLogement() {
+ void loadLogement() {
+   User? currentUser = FirebaseAuth.instance.currentUser;
+  
+  if (currentUser == null) {
+    print("Aucun utilisateur connecté");
+    if (mounted) {
+      setState(() {
+        logements = []; 
+      });
+    }
+    return;
+  }
+
+
     print("Chargement des logements...");
 
-    FirestoreService().getLogement().listen((snapshot) {
+    FirestoreService().getLogement(currentUser.uid).listen((snapshot) {
       print("Données reçues: ${snapshot.docs.length} logements");
       List<Logement> listeLogement = [];
 
@@ -35,7 +49,8 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
           String logementId = doc.id;
           String titre = doc.get('titre') ?? 'Titre non disponible';
           String adresse = doc.get('adresse') ?? 'Adresse non disponible';
-          String typeProperty = doc.get('propertyType') ?? 'Type non disponible';
+          String typeProperty =
+              doc.get('propertyType') ?? 'Type non disponible';
           String photo1 = doc.get('photo1') ?? '';
           double surface = doc.get('surface') ?? 0.0;
           double latitude = doc.get('latitude') ?? 0.0;

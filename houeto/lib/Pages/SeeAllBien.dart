@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Component/SeeAllBienWidget.dart';
@@ -17,68 +17,78 @@ class Seeallbien extends StatefulWidget {
 class SeeallbienState extends State<Seeallbien> {
   List<Logement> logements = [];
   StreamSubscription? _logementSubscription; 
-
-  void loadLogement() {
-    print("Chargement des logements...");
-
-    _logementSubscription?.cancel();
-
-    _logementSubscription = FirestoreService().getLogement().listen((snapshot) {
-      print("Données reçues: ${snapshot.docs.length} logements");
-      List<Logement> listeLogement = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          String logementId = doc.id;
-          String titre = doc.get('titre') ?? 'Titre non disponible';
-          String adresse = doc.get('adresse') ?? 'Adresse non disponible';
-          String typeProperty =
-              doc.get('propertyType') ?? 'Type non disponible';
-          String photo1 = doc.get('photo1') ?? '';
-          double surface = doc.get('surface') ?? 0.0;
-          double latitude = doc.get('latitude') ?? 0.0;
-          double longitude = doc.get('longitude') ?? 0.0;
-          double loyerJour = doc.get('loyerJour') ?? 0.0;
-          double loyerMois = doc.get('loyerMois') ?? 0.0;
-          int chambres = doc.get('chambres') ?? 0;
-
-          listeLogement.add(
-            Logement(
-              id: logementId,
-              adresse: adresse,
-              titre: titre,
-              typeProperty: typeProperty,
-              latitude: latitude,
-              longitude: longitude,
-              photo1: photo1,
-              loyerJour: loyerJour,
-              loyerMois: loyerMois,
-              chambres: chambres,
-              surface: surface,
-            ),
-          );
-        } catch (e) {
-          print("Erreur sur un document logement: $e");
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          logements = listeLogement;
-          print("Logements chargés: ${logements.length}");
-        });
-      }
-    }, onError: (error) {
-      print("Erreur lors du chargement des logements: $error");
-    });
+  
+ void loadLogement() async {
+  User? currentUser = FirebaseAuth.instance.currentUser;
+  
+  if (currentUser == null) {
+    print("Aucun utilisateur connecté");
+    if (mounted) {
+      setState(() {
+        logements = []; 
+      });
+    }
+    return;
   }
 
-  @override
-  void initState() {
-    super.initState();
-    loadLogement();
-  }
+  print("Chargement des logements pour l'utilisateur ${currentUser.uid}...");
 
+  _logementSubscription?.cancel();
+
+  _logementSubscription = FirestoreService().getLogement(currentUser.uid).listen((snapshot) {
+    print("Données reçues: ${snapshot.docs.length} logements");
+    List<Logement> listeLogement = [];
+
+    for (var doc in snapshot.docs) {
+      try {
+        String logementId = doc.id;
+        String titre = doc.get('titre') ?? 'Titre non disponible';
+        String adresse = doc.get('adresse') ?? 'Adresse non disponible';
+        String typeProperty = doc.get('propertyType') ?? 'Type non disponible';
+        String photo1 = doc.get('photo1') ?? '';
+        double surface = doc.get('surface') ?? 0.0;
+        double latitude = doc.get('latitude') ?? 0.0;
+        double longitude = doc.get('longitude') ?? 0.0;
+        double loyerJour = doc.get('loyerJour') ?? 0.0;
+        double loyerMois = doc.get('loyerMois') ?? 0.0;
+        int chambres = doc.get('chambres') ?? 0;
+
+        listeLogement.add(
+          Logement(
+            id: logementId,
+            adresse: adresse,
+            titre: titre,
+            typeProperty: typeProperty,
+            latitude: latitude,
+            longitude: longitude,
+            photo1: photo1,
+            loyerJour: loyerJour,
+            loyerMois: loyerMois,
+            chambres: chambres,
+            surface: surface,
+          ),
+        );
+      } catch (e) {
+        print("Erreur sur un document logement: $e");
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        logements = listeLogement;
+        print("Logements chargés: ${logements.length}");
+      });
+    }
+  }, onError: (error) {
+    print("Erreur lors du chargement des logements: $error");
+  });
+}
+
+@override
+void initState() {
+  super.initState();
+  loadLogement();
+}
   @override
   void dispose() {
     _logementSubscription?.cancel();

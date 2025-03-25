@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/JsonModels/Logement.dart';
 import 'package:houeto/Pages/EditLogement.dart';
@@ -19,7 +20,7 @@ void showAlertDialogConfirmDelete(String id) {
     builder: (BuildContext context) {
       return AlertDialog(
         title: Text("Confirmation"),
-        content: Text("Êtes-vous sûr de vouloir supprimer ce produit ?"),
+        content: Text("Êtes-vous sûr de vouloir supprimer ce logement ?"),
         actions: [
           
           TextButton(
@@ -32,6 +33,12 @@ void showAlertDialogConfirmDelete(String id) {
             onPressed: () async {
                 FirestoreService().deleteLogement(id);
                 Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Logement supprimé avec succès'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
             },
             child: Text("Confirmer"),
           ),
@@ -64,9 +71,22 @@ void showAlertDialogConfirmDelete(String id) {
   List<Logement> logements = [];
 
   void loadLogement() {
+   User? currentUser = FirebaseAuth.instance.currentUser;
+  
+  if (currentUser == null) {
+    print("Aucun utilisateur connecté");
+    if (mounted) {
+      setState(() {
+        logements = []; 
+      });
+    }
+    return;
+  }
+
+
     print("Chargement des logements...");
 
-    FirestoreService().getLogement().listen((snapshot) {
+    FirestoreService().getLogement(currentUser.uid).listen((snapshot) {
       print("Données reçues: ${snapshot.docs.length} logements");
       List<Logement> listeLogement = [];
 
@@ -172,7 +192,7 @@ void showAlertDialogConfirmDelete(String id) {
                       color: Colors.white,
                       child: SizedBox(
                         width: largeurEcran * 0.85,
-                        height: hauteurEcran * 0.22,
+                        height: hauteurEcran * 0.25,
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
                           child: Column(
@@ -181,7 +201,7 @@ void showAlertDialogConfirmDelete(String id) {
                               Row(
                                 children: [
                                   Text(
-                                    logements[index].typeProperty,
+                                    "${logements[index].typeProperty}- ${logements[index].titre}",
                                     style: TextStyle(fontSize: 12),
                                   ),
                                 ],
@@ -213,7 +233,7 @@ void showAlertDialogConfirmDelete(String id) {
                                         onPressed: () {
                                             Navigator.push(context, MaterialPageRoute(builder: (context)=> Editlogement(logementId: logements[index].id)));
                                         },
-                                        icon: const Icon(Icons.edit, size: 30),
+                                        icon: const Icon(Icons.edit_document, size: 30),
                                       ),
                                     ],
                                   ),

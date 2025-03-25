@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:houeto/pageProfile.dart';
+import 'package:houeto/Pages/pageProfile.dart';
 
 class PageInfos extends StatefulWidget {
   const PageInfos({super.key});

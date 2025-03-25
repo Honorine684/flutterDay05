@@ -113,7 +113,7 @@ class _ConnexionpageState extends State<ConnexionPage> {
                             if (formKey.currentState!.validate()) {
                               setState(() => isLoading = true);
                               try {
-                                await Auth().SigninWithEmailAndPassword(
+                                await Auth().signinWithEmailAndPassword(
                                     email.text, passWord.text);
                               } on FirebaseAuthException catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(

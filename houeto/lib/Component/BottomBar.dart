@@ -4,6 +4,7 @@ import 'package:houeto/Pages/AddLogement.dart';
 import 'package:houeto/Pages/Home.dart';
 import 'package:houeto/Pages/SeeAllBien.dart';
 import 'package:houeto/Pages/ShowBien.dart';
+import 'package:houeto/Pages/pageProfile.dart';
 
 class Bottombar extends StatefulWidget {
   const Bottombar({super.key});
@@ -111,7 +112,7 @@ class _BottombarState extends State<Bottombar> {
             Home(),
             Showbien(),
             Seeallbien() ,
-            Center(child: Text('Profile')),
+            PageProfile(),
           ],
         ),
       ),

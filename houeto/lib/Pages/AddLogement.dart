@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Component/Step1.dart';
 import 'package:houeto/Component/Step2.dart';
@@ -204,6 +206,12 @@ class AddlogementState extends State<Addlogement> {
                                
                                   addLogement();
                                   Navigator.push(context, MaterialPageRoute(builder: (context)=> const Showbien()));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Logement ajouté avec succes'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
                                   print("Logement ajouté avec succès!");
                                 }
                               : details.onStepContinue,
@@ -232,6 +240,19 @@ class AddlogementState extends State<Addlogement> {
 
   Future<void> addLogement() async {
     try {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (currentUser == null) {
+      print("Aucun utilisateur connecté");
+      return;
+    }
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+
+      // ignore: prefer_interpolation_to_compose_strings
+      String nomProprietaire = userDoc.get('nom') + ' ' + userDoc.get('prenom');
       String titre = logementData['titre'] ?? '';
       String adresse = logementData['adresse'] ?? '';
       String propertyType = logementData['propertyType'] ?? '';
@@ -276,6 +297,8 @@ class AddlogementState extends State<Addlogement> {
 
       // Ajout du logement
       await FirestoreService().addLogement(
+      currentUser.uid,  
+      nomProprietaire, 
         titre,
         adresse,
         propertyType,
@@ -308,6 +331,7 @@ class AddlogementState extends State<Addlogement> {
         latitude,
         longitude
       );
+    
 
       print("Logement ajouté avec succès !");
     } catch (e) {

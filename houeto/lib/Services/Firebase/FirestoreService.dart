@@ -5,6 +5,8 @@ class FirestoreService {
   final CollectionReference logement = FirebaseFirestore.instance.collection("logement");
 
   Future<DocumentReference<Object?>> addLogement(
+    String propritaireId,
+    String nomProprietaire,
     String titre,
     String adresse,
     String propertyType,
@@ -70,6 +72,8 @@ class FirestoreService {
       'latitude':latitude,
       'longitude':longitude,
       'statut':statut,
+      'proprietaireId':propritaireId,
+      'nomProprietaire':nomProprietaire,
       'Timestamp': Timestamp.now(),
     });
 
@@ -87,8 +91,10 @@ class FirestoreService {
 
     return logementRef;
   }
-  Stream<QuerySnapshot> getLogement(){
-  final logementStream = logement.orderBy('Timestamp',descending: true).snapshots();
+  Stream<QuerySnapshot> getLogement(String proprietaireId){
+  final logementStream = logement.where('proprietaireId', isEqualTo: proprietaireId)
+  .orderBy('Timestamp',descending: true)
+  .snapshots();
   return logementStream;
 }
 Future<void> updateLogement(
