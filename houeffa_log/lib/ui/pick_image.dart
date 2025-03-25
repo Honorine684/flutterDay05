@@ -1,9 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart';
 
 class PickImage extends StatefulWidget {
   const PickImage({Key? key}) : super(key: key);
@@ -15,30 +12,32 @@ class PickImage extends StatefulWidget {
 class _PickImageState extends State<PickImage> {
   File? _image;
 
-  Future getImage(ImageSource source) async {
+  Future<void> getImage(ImageSource source) async {
     try {
-      final XFile? image = await ImagePicker().pickImage(source: source);
-      if (image == null) return;
+      final XFile? pickedImage = await ImagePicker().pickImage(source: source);
+      if (pickedImage == null) return;
 
-      // Sauvegarde permanente de l'image
-      final imagePermanent = await saveFilePermanently(image.path);
+      final imageFile = File(pickedImage.path);
 
       setState(() {
-        _image = imagePermanent;
+        _image = imageFile;
       });
-    } on PlatformException catch (e) {
-      print('Failed to pick image: $e');
     } catch (e) {
-      print('Unexpected error: $e');
+      print('Erreur lors de la sélection de l’image : $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : $e')),
+      );
     }
   }
 
-  Future<File> saveFilePermanently(String imagePath) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final name = basename(imagePath);
-    final image = File('${directory.path}/$name');
-
-    return File(imagePath).copy(image.path);
+  void _confirmImage() {
+    if (_image != null) {
+      Navigator.pop(context, _image);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez sélectionner une image d’abord')),
+      );
+    }
   }
 
   @override
@@ -49,8 +48,8 @@ class _PickImageState extends State<PickImage> {
       ),
       body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 40),
             _image != null
                 ? Image.file(
                     _image!,
@@ -65,41 +64,26 @@ class _PickImageState extends State<PickImage> {
                     fit: BoxFit.cover,
                   ),
             const SizedBox(height: 40),
-            CustomButton(
-              title: 'Choisir depuis la galerie',
-              icon: Icons.image_outlined,
-              onClick: () => getImage(ImageSource.gallery),
+            ElevatedButton(
+              onPressed: () => getImage(ImageSource.gallery),
+              child: const Text('Choisir depuis la galerie'),
             ),
             const SizedBox(height: 20),
-            CustomButton(
-              title: 'Choisir depuis la caméra',
-              icon: Icons.camera,
-              onClick: () => getImage(ImageSource.camera),
+            ElevatedButton(
+              onPressed: () => getImage(ImageSource.camera),
+              child: const Text('Choisir depuis la caméra'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _confirmImage,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: const Text('Confirmer'),
             ),
           ],
         ),
       ),
     );
   }
-}
-
-Widget CustomButton({
-  required String title,
-  required IconData icon,
-  required VoidCallback onClick,
-}) {
-  return Container(
-    width: 280,
-    child: ElevatedButton(
-      onPressed: onClick,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon),
-          const SizedBox(width: 20),
-          Text(title),
-        ],
-      ),
-    ),
-  );
 }

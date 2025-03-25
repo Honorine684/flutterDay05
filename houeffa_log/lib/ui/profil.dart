@@ -1,12 +1,22 @@
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:houeffa_log/auth/auth_service.dart';
 
-class ProfilePage extends StatelessWidget {
-  final AuthService _auth = AuthService();
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:houeffa_log/ui/pick_image.dart';
 
-  ProfilePage({super.key});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
+  @override
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final AuthService _auth = AuthService();
+  File? _localProfileImage;
 
   Future<void> _signOut(BuildContext context) async {
     try {
@@ -16,6 +26,94 @@ class ProfilePage extends StatelessWidget {
       debugPrint("Erreur lors de la déconnexion : $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Erreur lors de la déconnexion : $e")),
+      );
+    }
+  }
+
+  Future<File?> _compressImage(File file) async {
+    final filePath = file.path;
+    final lastIndex = filePath.lastIndexOf('.');
+    final outPath = "${filePath.substring(0, lastIndex)}_compressed.jpg";
+
+    final compressedFile = await FlutterImageCompress.compressAndGetFile(
+      filePath,
+      outPath,
+      quality: 85, 
+    );
+
+    return compressedFile != null ? File(compressedFile.path) : file;
+  }
+
+  Future<void> _updateProfileImage() async {
+    final pickedImage = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PickImage()),
+    );
+
+    if (pickedImage != null && pickedImage is File) {
+      setState(() {
+        _localProfileImage = pickedImage;
+      });
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) throw "Utilisateur non connecté";
+
+        final compressedImage = await _compressImage(pickedImage);
+
+     
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('profile_images/${user.uid}.jpg');
+        await storageRef.putFile(compressedImage!);
+        final downloadUrl = await storageRef.getDownloadURL();
+
+      
+        await user.updatePhotoURL(downloadUrl);
+        await user.reload();
+
+        debugPrint("Photo de profil enregistrée : $downloadUrl");
+        setState(() {});
+      } catch (e) {
+        debugPrint("Erreur lors de l’enregistrement : $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur : $e")),
+        );
+      } finally {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  Future<void> _deleteProfileImage() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw "Utilisateur non connecté";
+
+    
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_images/${user.uid}.jpg');
+      await storageRef.delete();
+
+    
+      await user.updatePhotoURL(null);
+      await user.reload();
+
+      setState(() {
+        _localProfileImage = null;
+      });
+      debugPrint("Photo de profil supprimée");
+    } catch (e) {
+      debugPrint("Erreur lors de la suppression : $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur : $e")),
       );
     }
   }
@@ -68,12 +166,33 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                       Center(
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.white,
-                          backgroundImage: user.photoURL != null
-                              ? NetworkImage(user.photoURL!)
-                              : const AssetImage('assets/default_profile.png') as ImageProvider,
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.white,
+                              backgroundImage: _localProfileImage != null
+                                  ? FileImage(_localProfileImage!)
+                                  : (user.photoURL != null
+                                      ? NetworkImage(user.photoURL!)
+                                      : const AssetImage('assets/default_profile.png')) as ImageProvider,
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.camera_alt, color: Colors.white),
+                                  onPressed: _updateProfileImage,
+                                ),
+                                if (user.photoURL != null || _localProfileImage != null)
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.white),
+                                    onPressed: _deleteProfileImage,
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ],
