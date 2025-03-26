@@ -234,7 +234,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               onPressed: () => _signOut(context),
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                backgroundColor: Colors.redAccent,
+                                backgroundColor: Colors.deepOrange,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
