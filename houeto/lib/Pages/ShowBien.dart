@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/JsonModels/Logement.dart';
 import 'package:houeto/Pages/EditLogement.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
+import 'package:houeto/Services/Firebase/auth.dart';
 
 class Showbien extends StatefulWidget {
   const Showbien({super.key});
@@ -14,39 +17,110 @@ class Showbien extends StatefulWidget {
 }
 
 class ShowbienState extends State<Showbien> {
-void showAlertDialogConfirmDelete(String id) {
+  Future<void> sendConfierNotification({
+    required String logementId,
+    required String destinataireId,
+    required String destinataireToken,
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('demandesGestion').add({
+        'logementId': logementId,
+        'destinataireId': destinataireId,
+        'statut': 'en_attente',
+        'timestamp': Timestamp.now(),
+      });
+
+      final response = await FirebaseFunctions.instance
+          .httpsCallable('sendConfierNotification')
+          .call({
+        'destinataireToken': destinataireToken,
+        'logementId': logementId,
+        'destinataireId': destinataireId,
+      });
+
+      print("Notification envoyée: ${response.data}");
+    } catch (e) {
+      print("Erreur lors de l'envoi: $e");
+    }
+  }
+
+  void showProprietairesDialog(String logementId) async {
+    final proprietaires = await Auth().getProprietairesSansCurrentUser();
+
+    if (proprietaires.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Aucun autre propriétaire disponible")),
+      );
+      return;
+    }
+
     showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text("Confirmation"),
-        content: Text("Êtes-vous sûr de vouloir supprimer ce logement ?"),
-        actions: [
-          
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); 
-            },
-            child: Text("Non"),
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Choisir un propriétaire"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: proprietaires
+                .map((proprietaire) => ListTile(
+                      title: Text(proprietaire['nomComplet']),
+                      subtitle: Text(proprietaire['email']),
+                      onTap: () async {
+                        await sendConfierNotification(
+                          logementId: logementId,
+                          destinataireId: proprietaire['uid'],
+                          destinataireToken: proprietaire['fcmToken'],
+                        );
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                "Logement confié à ${proprietaire['nomComplet']}"),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                    ))
+                .toList(),
           ),
-          TextButton(
-            onPressed: () async {
+        ),
+      ),
+    );
+  }
+
+  void showAlertDialogConfirmDelete(String id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Confirmation"),
+          content: Text("Êtes-vous sûr de vouloir supprimer ce logement ?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text("Non"),
+            ),
+            TextButton(
+              onPressed: () async {
                 FirestoreService().deleteLogement(id);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Logement supprimé avec succès'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-            },
-            child: Text("Confirmer"),
-          ),
-        ],
-      );
-    },
-  );
-} 
+                  SnackBar(
+                    content: Text('Logement supprimé avec succès'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: Text("Confirmer"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   String getFirstTwoWords(String address) {
     List<String> words = address.split(' ');
     return words.length > 2 ? '${words[0]} ${words[1]}' : address;
@@ -71,18 +145,17 @@ void showAlertDialogConfirmDelete(String id) {
   List<Logement> logements = [];
 
   void loadLogement() {
-   User? currentUser = FirebaseAuth.instance.currentUser;
-  
-  if (currentUser == null) {
-    print("Aucun utilisateur connecté");
-    if (mounted) {
-      setState(() {
-        logements = []; 
-      });
-    }
-    return;
-  }
+    User? currentUser = FirebaseAuth.instance.currentUser;
 
+    if (currentUser == null) {
+      print("Aucun utilisateur connecté");
+      if (mounted) {
+        setState(() {
+          logements = [];
+        });
+      }
+      return;
+    }
 
     print("Chargement des logements...");
 
@@ -104,23 +177,23 @@ void showAlertDialogConfirmDelete(String id) {
           double loyerJour = doc.get('loyerJour') ?? 0.0;
           double loyerMois = doc.get('loyerMois') ?? 0.0;
           int chambres = doc.get('chambres') ?? 0;
-           String statut =
-              doc.get('statut') ?? 'statut non disponible';
+          String statut = doc.get('statut') ?? 'statut non disponible';
+          String mode = doc.get('mode') ?? 'mode non disponible';
           listeLogement.add(
             Logement(
-              id: logementId,
-              adresse: adresse,
-              titre: titre,
-              typeProperty: typeProperty,
-              latitude: latitude,
-              longitude: longitude,
-              photo1: photo1,
-              loyerJour: loyerJour,
-              loyerMois: loyerMois,
-              chambres: chambres,
-              surface: surface,
-              statut: statut
-            ),
+                id: logementId,
+                adresse: adresse,
+                titre: titre,
+                typeProperty: typeProperty,
+                latitude: latitude,
+                longitude: longitude,
+                photo1: photo1,
+                loyerJour: loyerJour,
+                loyerMois: loyerMois,
+                chambres: chambres,
+                surface: surface,
+                statut: statut,
+                mode: mode),
           );
         } catch (e) {
           print("Erreur sur un document logement: $e");
@@ -194,7 +267,7 @@ void showAlertDialogConfirmDelete(String id) {
                       color: Colors.white,
                       child: SizedBox(
                         width: largeurEcran * 0.85,
-                        height: hauteurEcran * 0.25,
+                        height: hauteurEcran * 0.3,
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
                           child: Column(
@@ -225,17 +298,25 @@ void showAlertDialogConfirmDelete(String id) {
                                     children: [
                                       IconButton(
                                         onPressed: () {
-                                          showAlertDialogConfirmDelete(logements[index].id
-                                          );
+                                          showAlertDialogConfirmDelete(
+                                              logements[index].id);
                                         },
                                         icon:
                                             const Icon(Icons.delete, size: 30),
                                       ),
                                       IconButton(
                                         onPressed: () {
-                                            Navigator.push(context, MaterialPageRoute(builder: (context)=> Editlogement(logementId: logements[index].id)));
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      Editlogement(
+                                                          logementId:
+                                                              logements[index]
+                                                                  .id)));
                                         },
-                                        icon: const Icon(Icons.edit_document, size: 30),
+                                        icon: const Icon(Icons.edit_document,
+                                            size: 30),
                                       ),
                                     ],
                                   ),
@@ -246,15 +327,36 @@ void showAlertDialogConfirmDelete(String id) {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  TextButton(
-                                    onPressed: () {},
-                                    child: const Text(
-                                      "Voir plus",
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.blue,
-                                          fontWeight: FontWeight.bold),
-                                    ),
+                                  Column(
+                                    children: [
+                                      TextButton(
+                                        onPressed: () {},
+                                        child: const Text(
+                                          "Voir plus",
+                                          style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.blue,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      if (logements[index].mode ==
+                                          "Non confier")
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            showProprietairesDialog(
+                                                logements[index].id);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            elevation: 2,
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 6),
+                                          ),
+                                          child: Text(
+                                            "Confier",
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   Column(
                                     children: [

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
 import 'package:houeto/Pages/Home.dart';
+import 'package:houeto/Pages/HomeGestion.dart';
 import 'package:houeto/Pages/SeeAllBien.dart';
 import 'package:houeto/Pages/ShowBien.dart';
 import 'package:houeto/Pages/pageProfile.dart';
@@ -49,7 +50,7 @@ class _BottombarState extends State<Bottombar> {
             ),
             IconButton(
               icon: Icon(
-                Icons.real_estate_agent,
+                Icons.dashboard,
                 color: selected == 1 ? Colors.red : Colors.grey,
               ),
               onPressed: () {
@@ -62,7 +63,7 @@ class _BottombarState extends State<Bottombar> {
             const SizedBox(width: 48), // Espace pour le bouton flottant
             IconButton(
               icon: Icon(
-                Icons.visibility,
+                Icons.real_estate_agent_outlined,
                 color: selected == 2 ? Colors.deepOrangeAccent : Colors.grey,
               ),
               onPressed: () {
@@ -74,13 +75,25 @@ class _BottombarState extends State<Bottombar> {
             ),
             IconButton(
               icon: Icon(
-                Icons.person,
+                Icons.visibility,
                 color: selected == 3 ? Colors.deepPurple : Colors.grey,
               ),
               onPressed: () {
                 setState(() {
                   selected = 3;
                   controller.jumpToPage(3);
+                });
+              },
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.person,
+                color: selected == 4 ? Colors.red : Colors.grey,
+              ),
+              onPressed: () {
+                setState(() {
+                  selected = 4;
+                  controller.jumpToPage(4);
                 });
               },
             ),
@@ -109,6 +122,7 @@ class _BottombarState extends State<Bottombar> {
         child: PageView(
           controller: controller,
           children: const [
+            Homegestion(),
             Home(),
             Showbien(),
             Seeallbien() ,

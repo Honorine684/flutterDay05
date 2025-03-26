@@ -179,13 +179,7 @@ class _ConnexionpageState extends State<ConnexionPage> {
         );
       } catch (e) {
         print("voici le probleme $e");
-        /*ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur de connexion : ${e.toString()}'),
-            
-            backgroundColor: Colors.red,
-          ),
-        );*/
+  
       }
     },
     style: OutlinedButton.styleFrom(

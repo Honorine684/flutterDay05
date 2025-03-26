@@ -205,6 +205,7 @@ class _SignupState extends State<Signup> {
                               setState(() => isLoading = true);
                               try {
                                 await Auth().createUserWithEmailAndPassword(nom: nom.text, prenom: prenom.text, email: email.text, password: passWord.text);
+                                
                                 if (mounted) {
                                   Navigator.pushReplacement(
                                     context,

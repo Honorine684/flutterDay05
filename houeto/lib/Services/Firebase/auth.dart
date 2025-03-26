@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class Auth{
@@ -32,15 +33,31 @@ class Auth{
         'solde':solde,
         'timestamp': Timestamp.now()
       });
+      await saveFCMToken(userCredential.user!.uid);
+
     }
   } catch (e) {
     print("Erreur lors de la création de l'utilisateur: $e");
+    rethrow;
   }
 }
 
-Future<void> signinWithEmailAndPassword(String email,String password) async{
-  await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
-} 
+Future<void> signinWithEmailAndPassword(String email, String password) async {
+  try {
+    UserCredential userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+      email: email, 
+      password: password
+    );
+    
+    // Met à jour le FCM Token après connexion
+    if (userCredential.user != null) {
+      await saveFCMToken(userCredential.user!.uid);
+    }
+  } catch (e) {
+    print("Erreur de connexion: $e");
+    rethrow;
+  }
+}
 // logout
 Future<void> logout()async{
   await _firebaseAuth.signOut();
@@ -123,22 +140,80 @@ Future<void> _addGoogleUser(
   String lastName, 
   String email, 
   String avatar,
-  
   {String role = 'proprietaire'}
-) {
-  return firestore
-    .collection('users')
-    .doc(userID)
-    .set({
+) async {
+  try {
+    await firestore.collection('users').doc(userID).set({
       'nom': firstName.isNotEmpty ? firstName : 'Non spécifié',
       'prenom': lastName.isNotEmpty ? lastName : 'Non spécifié',
       'email': email.isNotEmpty ? email : 'Non disponible',
       'photo': avatar.isNotEmpty ? avatar : 'URL par défaut',
       'role': role,
-      'solde':0.0,
-      'Timestamp': Timestamp.now()
-    })
-    .then((value) => print('Utilisateur ajouté'))
-    .catchError((error) => print('Erreur : $error'));
+      'solde': 0.0,
+      'timestamp': Timestamp.now()
+    });
+
+    // Sauvegarde le FCM Token
+    await saveFCMToken(userID);
+  } catch (e) {
+    print('Erreur : $e');
+    rethrow;
+  }
 }
+Future<List<Map<String, dynamic>>> getProprietairesSansCurrentUser() async {
+  try {
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'proprietaire')
+        .get();
+
+    return snapshot.docs
+        .where((doc) => doc.id != currentUserId)
+        .map((doc) {
+          final data = doc.data();
+          return {
+            'uid': doc.id,
+            'email': data['email'] ?? 'Pas d\'email',
+            'nomComplet': '${data['prenom'] ?? ''} ${data['nom'] ?? ''}'.trim(),
+           // 'fcmToken': data['fcmToken'] ?? '',
+          };
+        })
+        .toList();
+  } catch (e) {
+    print("Erreur lors de la récupération des propriétaires: $e");
+    return [];
+  }
+}
+
+
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+
+  // Génère et sauvegarde le FCM Token pour l'utilisateur connecté
+  Future<void> saveFCMToken(String userId) async {
+    try {
+      // Demande les permissions (iOS)
+      await _firebaseMessaging.requestPermission();
+      
+      // Récupère le token
+      String? token = await _firebaseMessaging.getToken();
+      
+      if (token != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .set({'fcmToken': token}, SetOptions(merge: true)); 
+        print("✅ FCM Token enregistré pour $userId");
+      }
+    } catch (e) {
+      print("❌ Erreur FCM Token: $e");
+    }
+  }
+
+  Future<void> updateAllExistingUsers() async {
+    final users = await FirebaseFirestore.instance.collection('users').get();
+    for (final doc in users.docs) {
+      await saveFCMToken(doc.id);
+    }
+  }
 }

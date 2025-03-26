@@ -5,7 +5,7 @@ class FirestoreService {
   final CollectionReference logement = FirebaseFirestore.instance.collection("logement");
 
   Future<DocumentReference<Object?>> addLogement(
-    String propritaireId,
+   String propritaireId,
     String nomProprietaire,
     String titre,
     String adresse,
@@ -37,9 +37,12 @@ class FirestoreService {
     String photo4,
     String description,
     double latitude,
-    double longitude,
-    {String statut = "Inocupper"}
-  ) async {
+    double longitude, {
+    String mode = "Non confier", 
+    String statut = "Inocupper",
+    String gestionnaireId = '',
+    String gestionnaireNom = '',
+  }) async{ 
     // Ajouter le logement principal
     DocumentReference logementRef = await logement.add({
       'titre': titre,
@@ -74,6 +77,9 @@ class FirestoreService {
       'statut':statut,
       'proprietaireId':propritaireId,
       'nomProprietaire':nomProprietaire,
+      'mode':mode,
+      'gestionnaireId':gestionnaireId,
+      'gestionnairNom':gestionnaireNom,
       'Timestamp': Timestamp.now(),
     });
 

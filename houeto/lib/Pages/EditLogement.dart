@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Component/Step1.dart';
 import 'package:houeto/Component/Step2.dart';
@@ -8,8 +7,6 @@ import 'package:houeto/Component/Step5.dart';
 import 'package:houeto/Component/Step6.dart';
 import 'package:houeto/Component/Step7.dart';
 import 'package:houeto/Component/StepDuMaps.dart';
-import 'package:houeto/Component/Stephoraire.dart';
-import 'package:houeto/JsonModels/JourDisponibilite.dart';
 import 'package:houeto/Pages/ShowBien.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
 
@@ -27,7 +24,7 @@ class EditlogementState extends State<Editlogement> {
   bool isLoading = false;
   int initialStep = 0;
   Map<String, dynamic> logementData = {};
-  Future<void> loadInitialData() async {
+ /* Future<void> loadInitialData() async {
     print("Chargement des donnees initiales");
     try {
       final doc = await FirebaseFirestore.instance
@@ -64,7 +61,7 @@ class EditlogementState extends State<Editlogement> {
         SnackBar(content: Text("Erreur de chargement: ${e.toString()}")),
       );
     }
-  }
+  }*/
 
   void getStep1Data(Map<String, dynamic> data) {
     logementData.addAll(data);
@@ -106,7 +103,7 @@ class EditlogementState extends State<Editlogement> {
 
   @override
   void initState() {
-    loadInitialData();
+    //loadInitialData();
     steps = [
       Step(
         title: Text("Informations de base"),
@@ -169,7 +166,7 @@ class EditlogementState extends State<Editlogement> {
         ),
         isActive: true,
       ),
-      Step(
+     /* Step(
         title: Text("Jour et heure de visite(si possible)",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Stephoraire(
@@ -177,7 +174,7 @@ class EditlogementState extends State<Editlogement> {
           initialAvailability: logementData['doctorAvailability'] ?? [],
         ),
         isActive: true,
-      ),
+      ),*/
       Step(
         title: Text("Conditions de visite",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
