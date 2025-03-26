@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:houeffa_log/auth/login.dart';
 import 'dart:developer' as developer;
 import 'package:houeffa_log/auth/verification.dart';
-import 'package:houeffa_log/screens/home_screen.dart';
+import 'package:houeffa_log/main.dart';
+
 
 class Wrapper extends StatelessWidget {
   const Wrapper({super.key});
@@ -25,7 +26,7 @@ class Wrapper extends StatelessWidget {
           } else {
             User user = snapshot.data!;
             if (user.emailVerified) {
-              return const HomeScreen();
+              return const MainScreen();
             } else {
               return VerificationScreen(user: user);
             }

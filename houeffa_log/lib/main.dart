@@ -1,16 +1,15 @@
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:houeffa_log/wrapper.dart';
+import 'package:houeffa_log/auth/login.dart';
+import 'package:houeffa_log/auth/verification.dart';
 import 'package:houeffa_log/ui/profil.dart';
-
-import 'firebase_options.dart'; // Si tu utilises FlutterFire CLI pour Firebase
-
-// Import des pages (ajuste selon les fichiers de ton collègue)
+import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/gl_screen.dart';
 import 'screens/services_screen.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,61 +25,61 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Houeffa Toit',
+      title: 'Houeffa',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true, 
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
+        '/wrapper': (context) => const Wrapper(),
+        '/main': (context) => const MainScreen(),
         '/login': (context) => const LoginScreen(),
-        '/home': (context) => const MainScreen(),
+        '/verification': (context) => VerificationScreen(
+              user: ModalRoute.of(context)!.settings.arguments as User,
+            ),
       },
     );
   }
 }
 
-// Splash Screen
+
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/login');
+      Navigator.pushReplacementNamed(context, '/wrapper');
     });
 
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Bienvenue chez Houeffa',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-// Écran de connexion
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Connexion')),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/home');
-          },
-          child: const Text('Se connecter'),
+      backgroundColor: Colors.blue.shade50,
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Bienvenue chez Houeffa',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
+            SizedBox(height: 20),
+            CircularProgressIndicator(color: Colors.blue),
+          ],
         ),
       ),
     );
   }
 }
 
-// MainScreen avec BottomNavigationBar (version de ton collègue)
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -92,11 +91,11 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const HomeScreen(),
-    const ExploreScreen(),
-    const GestionLocativeScreen(userId: ''), 
-    ServicesScreen(logementId: ''), 
-    const ProfilePage(),
+   HomeScreen(),
+     ExploreScreen(),
+     GestionLocativeScreen(userId: ''), 
+    ServicesScreen(logementId: ''), // 
+   ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -109,53 +108,30 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300), 
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+        child: _pages[_selectedIndex],
+        key: ValueKey<int>(_selectedIndex),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        backgroundColor: Colors.white,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
           BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Explorer'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Tableau de bord'),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Gestion'),
           BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Services'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
-      ),
-    );
-  }
-}
-
-
-
-
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  String _status = "En attente";
-
-  void _updateStatus() => setState(() => _status = _status == "En attente" ? "Terminé" : "En attente");
-
-  @override
-  Widget build(BuildContext context) {
-    debugPrint("Rendu de DashboardPage");
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text("Tableau de bord", style: TextStyle(fontSize: 24)),
-          const SizedBox(height: 20),
-          Text("Statut : $_status"),
-          ElevatedButton(
-            onPressed: _updateStatus,
-            child: const Text("Changer statut"),
-          ),
         ],
       ),
     );

@@ -27,7 +27,7 @@ class _PickImageState extends State<PickImage> {
 
     if (compressedFile == null) return null;
 
-    // Convertir en Base64
+   
     final bytes = await File(compressedFile.path).readAsBytes();
     return base64Encode(bytes);
   }
