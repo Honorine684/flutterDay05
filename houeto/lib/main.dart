@@ -4,6 +4,7 @@ import 'package:houeto/Login.dart';
 import 'package:houeto/firebase_options.dart';
 import 'package:houeto/pageAnnonces.dart';
 import 'package:houeto/pageDetails.dart';
+import 'package:houeto/pageNotifications.dart';
 import 'package:houeto/pageProfile.dart';
 
 
@@ -13,7 +14,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform
   );
    runApp(MaterialApp(
-   home: PageVisites(),
+   home: NotificationsPage(),
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       scaffoldBackgroundColor: Colors.white,
