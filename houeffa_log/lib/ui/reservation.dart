@@ -68,6 +68,8 @@ class _ReservationState extends State<Reservation> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("logementId reçu : ${widget.logementId}"); // Log pour vérifier
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Réserver un créneau"),
