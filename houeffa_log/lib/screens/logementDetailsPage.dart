@@ -27,6 +27,13 @@ class LogementDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    List<String> photos = [
+  logement['photo1'],
+  logement['photo2'],
+  logement['photo3'],
+  ].whereType<String>().where((photo) => photo.isNotEmpty).toList();
+
+
     return Scaffold(
       appBar: AppBar(
         title: Text(logement['titre'] ?? 'Détails du logement'),
@@ -38,12 +45,38 @@ class LogementDetailsPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              logement['photo1'] != null && logement['photo1'].isNotEmpty
-                  ? Image.memory(
-                      base64Decode(logement['photo1']),
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
+              photos.isNotEmpty
+                  ? Column(
+                      children: [
+                        SizedBox(
+                          height: 200,
+                          child: PageView.builder(
+                            itemCount: photos.length,
+                            itemBuilder: (context, index) => Image.memory(
+                              base64Decode(photos[index]),
+                              width: double.infinity,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            photos.length,
+                            (index) => Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.orange.withOpacity(0.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     )
                   : Container(
                       width: double.infinity,
@@ -71,10 +104,22 @@ class LogementDetailsPage extends StatelessWidget {
               _buildInfoRow(Icons.rule, "Conditions d'admission", logement['conditionAdmission']),
               _buildInfoRow(Icons.check_circle_outline, "État", logement['etat']),
               _buildInfoRow(Icons.payment, "Frais de visite", "${logement['fraisVisite'] ?? 0} FCFA"),
+              _buildInfoRow(Icons.balcony, "Balcons", logement['balcons']?.toString()),
+              _buildInfoRow(Icons.ac_unit, "Climatisé", logement['estClimatise'] == true ? 'Oui' : 'Non'),
+              _buildInfoRow(Icons.chair, "Meublé", logement['estMeuble'] == true ? 'Oui' : 'Non'),
+              _buildInfoRow(Icons.bathtub, "Sanitaire", logement['estSanitaire'] == true ? 'Oui' : 'Non'),
+              _buildInfoRow(Icons.person, "Nom du propriétaire", logement['nomProprietaire']),
+              _buildInfoRow(Icons.local_parking, "Parking", logement['parking']?.toString()),
+              _buildInfoRow(Icons.shower, "Salles de bain", logement['salles_de_bain']?.toString()),
+              _buildInfoRow(Icons.chair_alt, "Salons", logement['salons']?.toString()),
+              _buildInfoRow(Icons.info, "Statut", logement['statut']),
+              _buildInfoRow(Icons.square_foot, "Surface", logement['surface']?.toString()),
+              _buildInfoRow(Icons.terrain, "Terrasses", logement['terrasses']?.toString()),
+              _buildInfoRow(Icons.article, "Type de bail", logement['typeDeBail']),
               const SizedBox(height: 20),
               ElevatedButton.icon(
-                icon: const Icon(Icons.phone, color: Colors.white),
-                label: const Text("Contacter l'agence"),
+                icon: const Icon(Icons.calendar_today, color: Colors.white),
+                label: const Text("Prendre un rendez-vous"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,

@@ -5,7 +5,7 @@ import 'firebase_options.dart'; // Si tu utilises FlutterFire CLI pour configure
 // Import des pages
 import 'screens/home_screen.dart';
 import 'screens/explore_screen.dart';
-import 'screens/bookings_screen.dart';
+import 'screens/gl_screen.dart';
 import 'screens/services_screen.dart';
 import 'screens/profile_screen.dart';
 
@@ -91,8 +91,8 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _pages = [
     const HomeScreen(),
     const ExploreScreen(),
-    const BookingsScreen(),
-    const ServicesScreen(),
+    const GestionLocativeScreen(userId: '',),
+    ServicesScreen(logementId: '',),
     const ProfileScreen(),
   ];
 
@@ -122,7 +122,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
-            label: 'Rendez-vous',
+            label: 'Tableau de bord',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.build),

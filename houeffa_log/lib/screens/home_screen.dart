@@ -86,10 +86,10 @@ class _HomePageState extends State<HomeScreen> {
                         },
                         itemBuilder: (context) => [
                           const PopupMenuItem(value: 'Tous', child: Text('Tous')),
-                          const PopupMenuItem(value: 'Appartement', child: Text('Appartement')),
+                          const PopupMenuItem(value: 'appartement', child: Text('Appartement')),
                           const PopupMenuItem(value: 'Maison', child: Text('Maison')),
                           const PopupMenuItem(value: 'Boutique', child: Text('Boutique')),
-                          const PopupMenuItem(value: 'Duplexe', child: Text('Duplexe')),
+                          const PopupMenuItem(value: 'Duplex', child: Text('Duplex')),
                         ],
                       ),
                       border: OutlineInputBorder(
@@ -106,61 +106,67 @@ class _HomePageState extends State<HomeScreen> {
                       final logement = getFilteredLogements()[index];
                       return Card(
                         margin: const EdgeInsets.all(8.0),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: logement['photo1'] != null &&
-                                    logement['photo1'].isNotEmpty
-                                ? Image.memory(
-                                    base64Decode(logement['photo1']),
-                                    width: MediaQuery.of(context).size.width * 0.3,
-                                    height: 150,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Container(
-                                    width: MediaQuery.of(context).size.width * 0.3,
-                                    height: 150,
-                                    color: Colors.grey[300],
-                                    child: const Icon(
-                                      Icons.image_not_supported,
-                                      size: 50,
-                                      color: Colors.grey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: logement['photo1'] != null && logement['photo1'].isNotEmpty
+                                  ? Image.memory(
+                                      base64Decode(logement['photo1']),
+                                      width: double.infinity,
+                                      height: 150,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      width: double.infinity,
+                                      height: 150,
+                                      color: Colors.grey[300],
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    logement['titre'] ?? 'Sans titre',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    '${logement['adresse'] ?? 'Non spécifiée'}',
+                                    style: TextStyle(color: Colors.black.withOpacity(0.6)),
+                                  ),
+                                  Text(
+                                    '${(logement['description'] ?? 'Aucune description').length > 60 
+                                        ? logement['description'].substring(0, 60) 
+                                        : logement['description']}...',
+                                    style: TextStyle(color: Colors.black.withOpacity(0.6)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => LogementDetailsPage(logement: logement),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Voir plus'),
                                     ),
                                   ),
-                          ),
-                          title: Text(
-                            logement['titre'] ?? 'Sans titre',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('${logement['adresse'] ?? 'Non spécifiée'}', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                              Text('${logement['annee_construction'] ?? 'N/A'}', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                              Text('${logement['chambres'] ?? 0} chambres', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                              Text('${logement['loyerMois'] ?? 0} FCFA/mois', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                              Text('${logement['caution'] ?? 0} caution', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                              Text('${logement['conditionAdmission'] ?? 'Non spécifiée'}', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                              Text('${logement['description'] ?? 'Aucune description'}', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                              Text('${logement['etat'] ?? 'Non spécifié'}', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                              Text('${logement['fraisVisite'] ?? 0} FCFA frais de visite', style: TextStyle(color: Colors.black.withOpacity(0.6))),
-                            ],
-                          ),
-                          trailing: TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LogementDetailsPage(logement: logement),
-                                ),
-                              );
-                            },
-                            child: const Text('Voir plus'),
-                          ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
