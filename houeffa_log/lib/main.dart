@@ -121,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static final List<Widget> _pages = [
      ExplorePage(key: ValueKey("explore")),
-     Reservation(key: ValueKey("reservation")),
+     Reservation(key: ValueKey("reservation"), logementId: '',),
       DashboardPage(key: ValueKey("dashboard")),
      ProfilePage(key: ValueKey("profile")),
   ];
