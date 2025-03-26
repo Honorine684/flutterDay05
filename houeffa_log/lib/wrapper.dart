@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:houeffa_log/auth/login.dart';
 import 'dart:developer' as developer;
 import 'package:houeffa_log/auth/verification.dart';
-import 'package:houeffa_log/main.dart'; 
+import 'package:houeffa_log/screens/home_screen.dart';
 
 class Wrapper extends StatelessWidget {
   const Wrapper({super.key});
@@ -16,24 +16,16 @@ class Wrapper extends StatelessWidget {
         developer.log("Wrapper appelé");
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         } else if (snapshot.hasError) {
-          return const Scaffold(
-            body: Center(
-              child: Text("Erreur lors de la connexion"),
-            ),
-          );
+          return const Scaffold(body: Center(child: Text("Erreur lors de la connexion")));
         } else {
           if (snapshot.data == null) {
-            return const LoginScreen();
+            return const LoginScreen(); 
           } else {
             User user = snapshot.data!;
             if (user.emailVerified) {
-              return const HomeScreen(); 
+              return const HomeScreen();
             } else {
               return VerificationScreen(user: user);
             }

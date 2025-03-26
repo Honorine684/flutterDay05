@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     authDomain: 'dcliclogement.firebaseapp.com',
     storageBucket: 'dcliclogement.firebasestorage.app',
   );
+
 }
