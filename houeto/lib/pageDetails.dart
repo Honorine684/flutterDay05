@@ -809,10 +809,25 @@ class _PageDetailsState extends State<PageDetails> {
                   ),
                   SizedBox(height: hauteurEcran*0.01,),
                   Text(
-                      'Cette cabane est équipée d\'un système Smart Home et d\'un magnifique style viking. Vous pouvez voir le lever du soleil le matin avec une vue sur la ville depuis une fenêtre entièrement vitrée. \n\nCette unité est entourée par le quartier d\'affaires de West Surabaya qui vous offre la vie citadine ainsi qu\'un large éventail d\'activités culinaires. \n \nCet appartement est équipé d\'un lave-linge, d\'une cuisinière électrique, d\'un four à micro-ondes, d\'un réfrigérateur et de couverts.')
+                      'Cette cabane est équipée d\'un système Smart Home et d\'un magnifique style viking. Vous pouvez voir le lever du soleil le matin avec une vue sur la ville depuis une fenêtre entièrement vitrée. \n\nCette unité est entourée par le quartier d\'affaires de West Surabaya qui vous offre la vie citadine ainsi qu\'un large éventail d\'activités culinaires. \n \nCet appartement est équipé d\'un lave-linge, d\'une cuisinière électrique, d\'un four à micro-ondes, d\'un réfrigérateur et de couverts.'),
+                
+              Container(
+                width: double.infinity,
+                height: hauteurEcran * 0.06,
+                decoration: BoxDecoration(
+                    color: Colors.blue, borderRadius: BorderRadius.circular(2)),
+                child: Center(
+                  child: Text('Modifier',
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold)),
+                )),
+                
                 ],
               ),
             )
+
           ],
         ),
       ),
