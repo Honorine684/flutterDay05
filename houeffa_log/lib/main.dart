@@ -95,7 +95,7 @@ class _MainScreenState extends State<MainScreen> {
     const HomeScreen(),
     const ExploreScreen(),
     const GestionLocativeScreen(userId: ''), 
-    ServicesScreen(logementId: ''), // À ajuster avec un vrai logementId
+    ServicesScreen(logementId: ''), 
     const ProfilePage(),
   ];
 
@@ -129,7 +129,7 @@ class _MainScreenState extends State<MainScreen> {
 
 
 
-// DashboardPage (je l’ai laissé, mais il n’est pas utilisé dans MainScreen pour l’instant)
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
