@@ -17,7 +17,7 @@ class LogementDetailsPage extends StatelessWidget {
           Expanded(
             child: Text(
               "$label : ${value ?? 'Non spécifié'}",
-              style: TextStyle(color: Colors.black.withOpacity(0.7)),
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
             ),
           ),
         ],
@@ -95,12 +95,12 @@ class LogementDetailsPage extends StatelessWidget {
                     fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const Divider(),
+              _buildInfoRow(Icons.description, "Description", logement['description']),
               _buildInfoRow(Icons.location_on, "Adresse", logement['adresse']),
               _buildInfoRow(Icons.calendar_today, "Année de construction", logement['annee_construction']?.toString()),
               _buildInfoRow(Icons.bed, "Chambres", logement['chambres']?.toString()),
               _buildInfoRow(Icons.attach_money, "Loyer", "${logement['loyerMois'] ?? 0} FCFA/mois"),
               _buildInfoRow(Icons.security, "Caution", "${logement['caution'] ?? 0} FCFA"),
-              _buildInfoRow(Icons.description, "Description", logement['description']),
               _buildInfoRow(Icons.rule, "Conditions d'admission", logement['conditionAdmission']),
               _buildInfoRow(Icons.check_circle_outline, "État", logement['etat']),
               _buildInfoRow(Icons.payment, "Frais de visite", "${logement['fraisVisite'] ?? 0} FCFA"),

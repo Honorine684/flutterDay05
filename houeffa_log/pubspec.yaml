@@ -39,7 +39,6 @@ dependencies:
   firebase_auth: ^5.4.2
   google_sign_in: ^6.2.2
   google_maps_flutter: ^2.11.0
-  kkiapay_flutter_sdk: ^1.2.12
 
 dev_dependencies:
   flutter_test:
