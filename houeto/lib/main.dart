@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Authentication/RedirectionPage.dart';
-import 'package:houeto/Pages/AcceptConfierScreen.dart';
+import 'package:houeto/Pages/NotificationsPage.dart';
 import 'package:houeto/firebase_options.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -23,20 +23,11 @@ Future<void> main() async {
           .update({'fcmToken': newToken});
     }
   });
-FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    if (message.data['type'] == 'confier') {
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (_) => Acceptconfierscreen(
-            logementId: message.data['logementId'],
-            demandeurId: message.data['destinataireId'],
-          ),
-        ),
-      );
-    }
-  });
    runApp(MaterialApp(
    navigatorKey: navigatorKey,  
+    routes: {
+    '/pages/pageNotification': (context) => NotificationsPage(), 
+  },
    home: Redirectionpage(),
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
@@ -45,5 +36,8 @@ FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
     
       colorScheme: ColorScheme.light(
      primary: Colors.blue, 
-    ),)));
+     
+    ),
+    
+    )));
 }

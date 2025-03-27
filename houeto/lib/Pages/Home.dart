@@ -1,4 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:houeto/Pages/NotificationsPage.dart';
+import 'package:houeto/Pages/ShowBien.dart';
+import 'package:houeto/Services/Firebase/auth.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -10,6 +15,32 @@ class Home extends StatefulWidget {
 }
 
 class HomeState extends State<Home> {
+  String nom = '';
+String prenom = '';
+String email = '';
+String uid = '';
+Future<void> getUserData()async{
+  try{
+    final User? currentUser = Auth().currentUser;
+    DocumentSnapshot userDoc =  await FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).get();
+    if(userDoc.exists){
+      setState(() {
+        //uid = userDoc.get('uid');
+        nom = userDoc.get('nom')?? '';
+        prenom = userDoc.get('prenom')?? '';
+        email = currentUser.email??'';
+      });
+    }
+  }catch(e){
+    print("erreur lors de la recupération de l'user $e");
+  }
+}
+
+@override
+  void initState() {
+    getUserData();
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     final largeurEcran = MediaQuery.of(context).size.width;
@@ -27,7 +58,9 @@ class HomeState extends State<Home> {
             )
           ],
         ),
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.filter))],
+        actions: [IconButton(onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> const NotificationsPage()));
+        }, icon: Icon(Icons.notification_add_rounded))],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 20),
@@ -37,7 +70,7 @@ class HomeState extends State<Home> {
             Row(
               children: [
                 Text(
-                  "Bienvenue,Richard",
+                  "Bienvenue,$prenom",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -166,16 +199,18 @@ class HomeState extends State<Home> {
                         SizedBox(
                           height: hauteurEcran * 0.035,
                         ),
-                        Icon(
-                          Icons.visibility,
-                          size: 40,
-                        ),
+                        IconButton(
+                          onPressed:(){
+                            Navigator.push(context, MaterialPageRoute(builder: (context)=> const Showbien()));
+                          },
+                           icon: Icon(Icons.visibility,size: 40,)
+                           ),
                         Text(
-                          "Nombres de visites",
+                          "Voir plus",
                           style: TextStyle(fontSize: 13),
                         ),
                         Text(
-                          "10000 FCFA",
+                          "Vos logements",
                           style: TextStyle(fontSize: 11, color: Colors.amber),
                         )
                       ],

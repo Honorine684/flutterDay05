@@ -33,7 +33,7 @@ exports.sendConfierNotification = functions.https.onCall(async (data, context) =
         destinataireId: destinataireId,
       },
     });
-
+    console.log("Envoyé");
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de l'envoi de la notification :", error);

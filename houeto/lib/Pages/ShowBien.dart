@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/JsonModels/Logement.dart';
+import 'package:houeto/JsonModels/NotificationPush.dart';
 import 'package:houeto/Pages/EditLogement.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
 import 'package:houeto/Services/Firebase/auth.dart';
@@ -17,76 +17,70 @@ class Showbien extends StatefulWidget {
 }
 
 class ShowbienState extends State<Showbien> {
-  Future<void> sendConfierNotification({
-    required String logementId,
-    required String destinataireId,
-    required String destinataireToken,
-  }) async {
-    try {
-      await FirebaseFirestore.instance.collection('demandesGestion').add({
-        'logementId': logementId,
-        'destinataireId': destinataireId,
-        'statut': 'en_attente',
-        'timestamp': Timestamp.now(),
-      });
-
-      final response = await FirebaseFunctions.instance
-          .httpsCallable('sendConfierNotification')
-          .call({
-        'destinataireToken': destinataireToken,
-        'logementId': logementId,
-        'destinataireId': destinataireId,
-      });
-
-      print("Notification envoyée: ${response.data}");
-    } catch (e) {
-      print("Erreur lors de l'envoi: $e");
-    }
+void showProprietairesDialog(String logementId) async {
+  // Récupérer les propriétaires sauf l'utilisateur actuel
+  final proprietaires = await Auth().getProprietairesSansCurrentUser();
+  if (proprietaires.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Aucun autre propriétaire disponible")),
+    );
+    return;
   }
 
-  void showProprietairesDialog(String logementId) async {
-    final proprietaires = await Auth().getProprietairesSansCurrentUser();
+  // Récupérer les infos du logement depuis Firestore
+  DocumentSnapshot logementSnapshot = await FirebaseFirestore.instance
+      .collection('logement')
+      .doc(logementId)
+      .get();
 
-    if (proprietaires.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Aucun autre propriétaire disponible")),
-      );
-      return;
-    }
+  if (!logementSnapshot.exists) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Logement introuvable")),
+    );
+    return;
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Choisir un propriétaire"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: proprietaires
-                .map((proprietaire) => ListTile(
-                      title: Text(proprietaire['nomComplet']),
-                      subtitle: Text(proprietaire['email']),
-                      onTap: () async {
-                        await sendConfierNotification(
-                          logementId: logementId,
-                          destinataireId: proprietaire['uid'],
-                          destinataireToken: proprietaire['fcmToken'],
-                        );
+  // Extraire le nom du logement
+  String nomLogement = logementSnapshot['titre'] ?? "Logement inconnu";
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                "Logement confié à ${proprietaire['nomComplet']}"),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      },
-                    ))
-                .toList(),
-          ),
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Choisir un propriétaire"),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: proprietaires
+              .map((proprietaire) => ListTile(
+                    title: Text(proprietaire['nomComplet']),
+                    subtitle: Text(proprietaire['email']),
+                    onTap: () async {
+                      // Envoyer la notification avec le nom du logement
+                      await NotificationService().sendNotification(
+                        receiverId: proprietaire['uid'],
+                        title: "Demande de gestion",
+                        body: "Le logement \"$nomLogement\" vous a été confié.",
+                        logementId: logementId,
+                      );
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              "Logement \"$nomLogement\" confié à ${proprietaire['nomComplet']}"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+
+                      Navigator.of(context).pop();
+                    },
+                  ))
+              .toList(),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   void showAlertDialogConfirmDelete(String id) {
     showDialog(
@@ -220,7 +214,6 @@ class ShowbienState extends State<Showbien> {
     final hauteurEcran = MediaQuery.of(context).size.height;
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: Row(
           children: [
             SizedBox(

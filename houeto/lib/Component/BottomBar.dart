@@ -2,10 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
 import 'package:houeto/Pages/Home.dart';
-import 'package:houeto/Pages/HomeGestion.dart';
 import 'package:houeto/Pages/SeeAllBien.dart';
-import 'package:houeto/Pages/ShowBien.dart';
 import 'package:houeto/Pages/pageProfile.dart';
+import 'package:houeto/Pages/pageVisite.dart';
 
 class Bottombar extends StatefulWidget {
   const Bottombar({super.key});
@@ -50,8 +49,8 @@ class _BottombarState extends State<Bottombar> {
             ),
             IconButton(
               icon: Icon(
-                Icons.dashboard,
-                color: selected == 1 ? Colors.red : Colors.grey,
+                Icons.real_estate_agent_rounded,
+                color: selected == 1 ? Colors.blue : Colors.grey,
               ),
               onPressed: () {
                 setState(() {
@@ -63,7 +62,7 @@ class _BottombarState extends State<Bottombar> {
             const SizedBox(width: 48), // Espace pour le bouton flottant
             IconButton(
               icon: Icon(
-                Icons.real_estate_agent_outlined,
+                Icons.golf_course_rounded,
                 color: selected == 2 ? Colors.deepOrangeAccent : Colors.grey,
               ),
               onPressed: () {
@@ -75,8 +74,8 @@ class _BottombarState extends State<Bottombar> {
             ),
             IconButton(
               icon: Icon(
-                Icons.visibility,
-                color: selected == 3 ? Colors.deepPurple : Colors.grey,
+                Icons.person,
+                color: selected == 3 ? Colors.red : Colors.grey,
               ),
               onPressed: () {
                 setState(() {
@@ -85,18 +84,7 @@ class _BottombarState extends State<Bottombar> {
                 });
               },
             ),
-            IconButton(
-              icon: Icon(
-                Icons.person,
-                color: selected == 4 ? Colors.red : Colors.grey,
-              ),
-              onPressed: () {
-                setState(() {
-                  selected = 4;
-                  controller.jumpToPage(4);
-                });
-              },
-            ),
+            
           ],
         ),
       ),
@@ -106,7 +94,6 @@ class _BottombarState extends State<Bottombar> {
         onPressed: () {
           setState(() {
             Navigator.push(context, MaterialPageRoute(builder: (context)=> const Addlogement()));
-            //add = !add;
           });
         },
         backgroundColor: Colors.white,
@@ -122,10 +109,10 @@ class _BottombarState extends State<Bottombar> {
         child: PageView(
           controller: controller,
           children: const [
-            Homegestion(),
+            //Homegestion(),
             Home(),
-            Showbien(),
             Seeallbien() ,
+            PageVisites(),
             PageProfile(),
           ],
         ),
