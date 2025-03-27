@@ -1,836 +1,383 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:houeto/JsonModels/Logement.dart';
+import 'package:houeto/Pages/EditLogement.dart';
 
-class PageDetails extends StatefulWidget {
-  const PageDetails({super.key});
+class PageDetailsProprietaire extends StatefulWidget {
+  final Logement logement;
+  const PageDetailsProprietaire({super.key, required this.logement});
 
   @override
-  State<PageDetails> createState() => _PageDetailsState();
+  State<PageDetailsProprietaire> createState() => _PageDetailsProprietaireState();
 }
 
-class _PageDetailsState extends State<PageDetails> {
-  final images = [
-    'assets/images/fig2.jpg',
-    'assets/images/google.jpg',
-    'assets/images/fig2.jpg'
-  ];
-  final pageController = PageController();
+class _PageDetailsProprietaireState extends State<PageDetailsProprietaire> {
+  late PageController _pageController;
+  late List<String> _images = [];
 
-  double get pageOffset {
-    try {
-      var page = pageController.page ?? pageController.initialPage.toDouble();
-      return page % images.length;
-    } catch (_) {
-      return pageController.initialPage.toDouble();
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+    _loadImages();
+  }
+
+  void _loadImages() {
+    final logement = widget.logement;
+    _images = [];
+    
+    if (logement.photo1.isNotEmpty) _images.add(logement.photo1);
+    if (logement.photo2.isNotEmpty) _images.add(logement.photo2);
+    if (logement.photo3.isNotEmpty) _images.add(logement.photo3);
+    
+    if (_images.isEmpty) {
+      _images.add('assets/images/placeholder.jpg');
     }
   }
 
-  double calculateOffsetForIndex(int index) {
-    return (index - pageOffset);
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final largeurEcran = MediaQuery.of(context).size.width;
+    final size = MediaQuery.of(context).size;
+    final logement = widget.logement;
 
-    final hauteurEcran = MediaQuery.of(context).size.height;
     return Scaffold(
+      appBar: AppBar(
+        title: Text(logement.titre),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.edit),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context)=> Editlogement(logementId:logement.id)))
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
         child: Column(
           children: [
-            Container(
-              height: hauteurEcran * 0.3,
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              child: PageView.builder(
-                  controller: pageController,
-                  itemCount: images.length,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      decoration: BoxDecoration(
-                          image: DecorationImage(
-                              image: AssetImage(images[index]),
-                              fit: BoxFit.fill)),
-                    );
-                  }),
-            ),
-            Container(
-              height: 34,
-              margin: EdgeInsets.symmetric(horizontal: 8),
-              child: AnimatedBuilder(
-                  animation: pageController,
-                  builder: (context, _) {
-                    return ListView.separated(
-                      itemCount: images.length,
-                      scrollDirection: Axis.horizontal,
-                      separatorBuilder: (_, __) {
-                        return const SizedBox(width: 4);
-                      },
-                      itemBuilder: (context, index) {
-                        final absoluteOffset =
-                            calculateOffsetForIndex(index).abs();
-                        final Offset = 1 - absoluteOffset.clamp(0, 1);
-                        return Container(
-                          height:
-                              hauteurEcran * 0.012 + (10 * Offset.toDouble()),
-                          width:
-                              largeurEcran * 0.012 + (10 * Offset.toDouble()),
-                          decoration: const BoxDecoration(
-                              color: Colors.amber, shape: BoxShape.circle),
-                        );
-                      },
-                    );
-                  }),
-            ),
-            SingleChildScrollView(
-              padding: EdgeInsets.all(10),
+            if (_images.isNotEmpty) _buildImageCarousel(size),
+            
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                      width: double.infinity,
-                      height: hauteurEcran * 0.06,
-                      decoration: BoxDecoration(
-                          border: Border.all(
-                              width: 2, color: Colors.deepPurpleAccent),
-                          color: Color.fromRGBO(208, 205, 205, 0.486),
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Center(
-                        child: Text('Regarder la vidéo',
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.deepPurpleAccent,
-                                fontWeight: FontWeight.bold)),
-                      )),
-                  SizedBox(
-                    height: 5,
-                  ),
-                  Divider(
-                    color: Color.fromRGBO(112, 101, 101, 0.475),
-                  ),
-                  SizedBox(
-                    height: 5,
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      child: Text(
-                        'Appartement meublé - Akpakpa',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 20),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 4,
-                  ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        Icons.star,
-                        color: Colors.amberAccent,
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
                       Text(
-                        '4.1',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.008,
-                      ),
-                      Text(
-                        '(66 visites)',
+                        logement.titre,
                         style: TextStyle(
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
                         ),
                       ),
-                      SizedBox(
-                        width: largeurEcran * 0.23,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (logement.loyerMois > 0)
+                            Text(
+                              '${logement.loyerMois} FCFA/mois',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          if (logement.loyerJour > 0)
+                            Text(
+                              '${logement.loyerJour} FCFA/jour',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                        ],
                       ),
-                      Icon(
-                        Icons.bed,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        '2 chambres',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
+                    ],
+                  ),
+                  
+                  SizedBox(height: 8),
+                  
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, size: 16, color: Colors.grey),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          logement.adresse,
+                          style: TextStyle(color: Colors.grey),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(
-                    height: hauteurEcran * 0.005,
-                  ),
-                  Row(
+                  
+                  Divider(height: 24),
+                  
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
                     children: [
-                      Icon(
-                        Icons.weekend,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Salon/Séjour',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.26,
-                      ),
-                      Icon(
-                        Icons.dining,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Salle à manger',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
+                      _buildFeatureChip(Icons.home, 'Type', logement.typeProperty),
+                      _buildFeatureChip(Icons.aspect_ratio, 'Surface', '${logement.surface} m²'),
+                      _buildFeatureChip(Icons.bed, 'Chambres', '${logement.chambres}'),
+                      _buildFeatureChip(Icons.bathtub, 'Salles de bain', '${logement.salleDeBains}'),
+                      if (logement.etages > 0) _buildFeatureChip(Icons.layers, 'Étages', '${logement.etages}'),
+                      if (logement.parking > 0) _buildFeatureChip(Icons.local_parking, 'Parkings', '${logement.parking}'),
                     ],
                   ),
-                  SizedBox(
-                    height: hauteurEcran * 0.005,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.room,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Cotonou, Littoral',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.19,
-                      ),
-                      Icon(
-                        Icons.home_outlined,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        '850 m²',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      child: Text(
-                        'Accessibilité & Sécurité',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.elevator,
-                        color: Colors.black,
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Ascenceur',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.31,
-                      ),
-                      Icon(
-                        Icons.layers,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Etage',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.accessible,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Accès PMR',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.29,
-                      ),
-                      Icon(
-                        Icons.dialpad,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Digicode',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.videocam,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Vidéo de surveillance',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.11,
-                      ),
-                      Icon(
-                        Icons.security,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Alarme',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      child: Text(
-                        'Extérieurs et dépendances',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.deck,
-                        color: Colors.black,
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Balcon',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.38,
-                      ),
-                      Icon(
-                        Icons.park,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Jardin',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.garage,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Garage',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.38,
-                      ),
-                      Icon(
-                        Icons.house_outlined,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Véranda',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.outdoor_grill,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Cuisine d\'été',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.28,
-                      ),
-                      Icon(
-                        Icons.cottage,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Abri de jardin',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      child: Text(
-                        'Cuisine et électroménager',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.local_laundry_service,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Lave-vaisselle',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.25,
-                      ),
-                      Icon(
-                        Icons.kitchen,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Réfrigérateur',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.microwave,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Four/Micro-ondes',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.18,
-                      ),
-                      Icon(
-                        Icons.heat_pump,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Gaz',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.air,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Hotte aspirante',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.22,
-                      ),
-                      Icon(
-                        Icons.water_drop,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Evier',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      child: Text(
-                        'Confort et équipements',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.ac_unit,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Climatisation',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.26,
-                      ),
-                      Icon(
-                        Icons.heat_pump,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Isolation',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.device_hub,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Domotique',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.3,
-                      ),
-                      Icon(
-                        Icons.fireplace,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Cheminée',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      child: Text(
-                        'Technologie et connectivité',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.wifi,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Connexion Wifi',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.22,
-                      ),
-                      Icon(
-                        Icons.settings_ethernet,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Prises RJ45',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: hauteurEcran * 0.01,
-                  ),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.settings_input_antenna,
-                        color: Color.fromRGBO(67, 58, 58, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.01,
-                      ),
-                      Text(
-                        'Antenne',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.34,
-                      ),
-                      Icon(
-                        Icons.speaker,
-                        color: Color.fromRGBO(28, 21, 21, 0.475),
-                      ),
-                      SizedBox(
-                        width: largeurEcran * 0.02,
-                      ),
-                      Text(
-                        'Home Cinéma',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(67, 58, 58, 0.475),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: hauteurEcran*0.01,),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      child: Text(
-                        'A propos de cet appartement',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 20),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: hauteurEcran*0.01,),
+                  
+                  Divider(height: 24),
+                  
                   Text(
-                      'Cette cabane est équipée d\'un système Smart Home et d\'un magnifique style viking. Vous pouvez voir le lever du soleil le matin avec une vue sur la ville depuis une fenêtre entièrement vitrée. \n\nCette unité est entourée par le quartier d\'affaires de West Surabaya qui vous offre la vie citadine ainsi qu\'un large éventail d\'activités culinaires. \n \nCet appartement est équipé d\'un lave-linge, d\'une cuisinière électrique, d\'un four à micro-ondes, d\'un réfrigérateur et de couverts.'),
-                
-              Container(
-                width: double.infinity,
-                height: hauteurEcran * 0.06,
-                decoration: BoxDecoration(
-                    color: Colors.blue, borderRadius: BorderRadius.circular(2)),
-                child: Center(
-                  child: Text('Modifier',
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold)),
-                )),
-                
+                    'Description',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    logement.description.isNotEmpty 
+                        ? logement.description 
+                        : 'Aucune description fournie',
+                  ),
+                  
+                  Divider(height: 24),
+                  
+                  _buildDetailSection(
+                    title: 'Détails du logement',
+                    items: [
+                      _DetailItem('Statut', logement.statut),
+                      _DetailItem('Mode', logement.mode ?? "NOn confier"),
+                      _DetailItem('État', logement.etat),
+                      _DetailItem('Type de bail', logement.typeDeBail),
+                      _DetailItem('Avance requise', '${logement.avance} FCFA'),
+                      _DetailItem('Frais de visite', '${logement.fraisDeVisite} FCFA'),
+                    ],
+                  ),
+                  
+_buildDetailSection(
+  title: 'Équipements',
+  items: [
+    _DetailItem('Meublé', logement.estMeuble != null ? (logement.estMeuble! ? 'Oui' : 'Non') : 'Non spécifié'),
+    _DetailItem('Climatisé', logement.estClimatise != null ? (logement.estClimatise! ? 'Oui' : 'Non') : 'Non spécifié'),
+    _DetailItem('Sanitaire', logement.estSanitaire != null ? (logement.estSanitaire! ? 'Oui' : 'Non') : 'Non spécifié'),
+  ],
+),
+                  
+                  _buildDetailSection(
+                    title: 'Conditions d\'admission',
+                    items: [
+                      _DetailItem('Conditions', logement.conditionAdmission),
+                    ],
+                  ),
+                  
+                  if (logement.gestionnaireNom.isNotEmpty)
+                    _buildDetailSection(
+                      title: 'Gestion',
+                      items: [
+                        _DetailItem('Gestionnaire', logement.gestionnaireNom),
+                      ],
+                    ),
+                  
+                  // Créneaux de visite
+                  if (logement.creneaux.isNotEmpty)
+                    _buildCreneauxSection(logement.creneaux),
+                  
+                  SizedBox(height: 24),
                 ],
               ),
-            )
-
+            ),
           ],
         ),
       ),
     );
   }
+
+ Widget _buildImageCarousel(Size size) {
+  return SizedBox(
+    height: size.height * 0.3,
+    child: Stack(
+      children: [
+        PageView.builder(
+          controller: _pageController,
+          itemCount: _images.length,
+          itemBuilder: (context, index) {
+            return _images[index].startsWith('http')
+                ? Image.network(_images[index], fit: BoxFit.cover)
+                : _images[index].startsWith('assets/')
+                    ? Image.asset(_images[index], fit: BoxFit.cover)
+                    : Image.memory(
+                        base64Decode(_images[index]),
+                        fit: BoxFit.cover,
+                      );
+          },
+        ),
+        if (_images.length > 1)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(_images.length, (index) {
+                return AnimatedBuilder(
+                  animation: _pageController,
+                  builder: (context, child) {
+                    final currentPage = _pageController.hasClients 
+                        ? _pageController.page ?? 0 
+                        : 0;
+                    final isActive = (currentPage - index).abs() < 0.5;
+                    return Container(
+                      width: isActive ? 12 : 8,
+                      height: 8,
+                      margin: EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: isActive ? Colors.white : Colors.white54,
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildFeatureChip(IconData icon, String label, String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: Colors.blue),
+        SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 12, color: Colors.grey)),
+            Text(value, style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailSection({
+    required String title,
+    required List<_DetailItem> items,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 12),
+        ...items.map((item) => Padding(
+          padding: EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 120,
+                child: Text(
+                  item.label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(item.value),
+              ),
+            ],
+          ),
+        )),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
+Widget _buildCreneauxSection(List<Map<String, dynamic>>? creneaux) {
+  if (creneaux == null || creneaux.isEmpty) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Créneaux de visite',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Aucun créneau disponible pour le moment',
+          style: TextStyle(color: Colors.grey),
+        ),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Créneaux de visite',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      SizedBox(height: 12),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: creneaux.map((creneau) {
+          return Chip(
+            label: Text(
+              '${creneau['jour'] ?? 'Jour non spécifié'} '
+              '${_formatCreneau(creneau)}',
+            ),
+            backgroundColor: Colors.blue[50],
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          );
+        }).toList(),
+      ),
+      SizedBox(height: 16),
+    ],
+  );
+}
+
+String _formatCreneau(Map<String, dynamic> creneau) {
+  // Formatage des heures avec valeurs par défaut
+  final startHour = creneau['startHour']?.toString() ?? '0';
+  final startMinute = creneau['startMinute']?.toString().padLeft(2, '0') ?? '00';
+  final endHour = creneau['endHour']?.toString() ?? '0';
+  final endMinute = creneau['endMinute']?.toString().padLeft(2, '0') ?? '00';
+
+  // Construction de la chaîne formatée
+  return '${startHour.padLeft(2, '0')}:$startMinute - ${endHour.padLeft(2, '0')}:$endMinute';
+}
+
+}
+
+class _DetailItem {
+  final String label;
+  final String value;
+
+  _DetailItem(this.label, this.value);
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:houeto/JsonModels/Logement.dart';
 import 'package:houeto/JsonModels/NotificationPush.dart';
 import 'package:houeto/Pages/EditLogement.dart';
+import 'package:houeto/Pages/PageDetails.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
 import 'package:houeto/Services/Firebase/auth.dart';
 
@@ -17,70 +18,70 @@ class Showbien extends StatefulWidget {
 }
 
 class ShowbienState extends State<Showbien> {
-void showProprietairesDialog(String logementId) async {
-  // Récupérer les propriétaires sauf l'utilisateur actuel
-  final proprietaires = await Auth().getProprietairesSansCurrentUser();
-  if (proprietaires.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Aucun autre propriétaire disponible")),
-    );
-    return;
-  }
+  void showProprietairesDialog(String logementId) async {
+    // Récupérer les propriétaires sauf l'utilisateur actuel
+    final proprietaires = await Auth().getProprietairesSansCurrentUser();
+    if (proprietaires.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Aucun autre propriétaire disponible")),
+      );
+      return;
+    }
 
-  // Récupérer les infos du logement depuis Firestore
-  DocumentSnapshot logementSnapshot = await FirebaseFirestore.instance
-      .collection('logement')
-      .doc(logementId)
-      .get();
+    // Récupérer les infos du logement depuis Firestore
+    DocumentSnapshot logementSnapshot = await FirebaseFirestore.instance
+        .collection('logement')
+        .doc(logementId)
+        .get();
 
-  if (!logementSnapshot.exists) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Logement introuvable")),
-    );
-    return;
-  }
+    if (!logementSnapshot.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Logement introuvable")),
+      );
+      return;
+    }
 
-  // Extraire le nom du logement
-  String nomLogement = logementSnapshot['titre'] ?? "Logement inconnu";
+    // Extraire le nom du logement
+    String nomLogement = logementSnapshot['titre'] ?? "Logement inconnu";
 
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text("Choisir un propriétaire"),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: proprietaires
-              .map((proprietaire) => ListTile(
-                    title: Text(proprietaire['nomComplet']),
-                    subtitle: Text(proprietaire['email']),
-                    onTap: () async {
-                      // Envoyer la notification avec le nom du logement
-                      await NotificationService().sendNotification(
-                        receiverId: proprietaire['uid'],
-                        title: "Demande de gestion",
-                        body: "Le logement \"$nomLogement\" vous a été confié.",
-                        logementId: logementId,
-                      );
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Choisir un propriétaire"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: proprietaires
+                .map((proprietaire) => ListTile(
+                      title: Text(proprietaire['nomComplet']),
+                      subtitle: Text(proprietaire['email']),
+                      onTap: () async {
+                        // Envoyer la notification avec le nom du logement
+                        await NotificationService().sendNotification(
+                          receiverId: proprietaire['uid'],
+                          title: "Demande de gestion",
+                          body:
+                              "Le logement \"$nomLogement\" vous a été confié.",
+                          logementId: logementId,
+                        );
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              "Logement \"$nomLogement\" confié à ${proprietaire['nomComplet']}"),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                "Logement \"$nomLogement\" confié à ${proprietaire['nomComplet']}"),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
 
-                      Navigator.of(context).pop();
-                    },
-                  ))
-              .toList(),
+                        Navigator.of(context).pop();
+                      },
+                    ))
+                .toList(),
+          ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   void showAlertDialogConfirmDelete(String id) {
     showDialog(
@@ -138,69 +139,161 @@ void showProprietairesDialog(String logementId) async {
 
   List<Logement> logements = [];
 
-  void loadLogement() {
-    User? currentUser = FirebaseAuth.instance.currentUser;
+ void loadLogement() {
+  User? currentUser = FirebaseAuth.instance.currentUser;
 
-    if (currentUser == null) {
-      print("Aucun utilisateur connecté");
-      if (mounted) {
-        setState(() {
-          logements = [];
+  if (currentUser == null) {
+    print("Aucun utilisateur connecté");
+    if (mounted) {
+      setState(() {
+        logements = [];
+      });
+    }
+    return;
+  }
+
+  print("Chargement des logements...");
+
+  FirestoreService().getLogement(currentUser.uid).listen((snapshot) async {
+    print("Données reçues: ${snapshot.docs.length} logements");
+    List<Logement> listeLogement = [];
+    List<Future<void>> creneauxFutures = [];
+
+    for (var doc in snapshot.docs) {
+      try {
+        String logementId = doc.id;
+        String titre = doc.get('titre') ?? 'Titre non disponible';
+        String adresse = doc.get('adresse') ?? 'Adresse non disponible';
+        String typeProperty = doc.get('propertyType') ?? 'Type non disponible';
+        String photo1 = doc.get('photo1') ?? '';
+        double surface = doc.get('surface') ?? 0.0;
+        double latitude = doc.get('latitude') ?? 0.0;
+        double longitude = doc.get('longitude') ?? 0.0;
+        double loyerJour = doc.get('loyerJour') ?? 0.0;
+        double loyerMois = doc.get('loyerMois') ?? 0.0;
+        int chambres = doc.get('chambres') ?? 0;
+        String statut = doc.get('statut') ?? 'statut non disponible';
+        String mode = doc.get('mode') ?? 'mode non disponible';
+        String photo2 = doc.get('photo2') ?? '';
+        String photo3 = doc.get('photo3') ?? '';
+        int salleDeBains = doc.get('salles_de_bain') ?? 0;
+        int cuisines = doc.get('cuisines') ?? 0;
+        int salons = doc.get('salons') ?? 0;
+        int terrasses = doc.get('terrasses') ?? 0;
+        int balcons = doc.get('balcons') ?? 0;
+        int parking = doc.get('parking') ?? 0;
+        int etages = doc.get('etages') ?? 0;
+        String etat = doc.get('etat') ?? 'aucun etat';
+        bool estSanitaire = doc.get('estSanitaire');
+        bool estMeuble = doc.get('estMeuble');
+        bool estClimatise = doc.get('estClimatise');
+        double avance = doc.get('avance') ?? 0.0;
+        String conditionAdmission = doc.get('conditionAdmission') ?? 'accepte tous le monde';
+        String typeDeBail = doc.get('typeDeBail') ?? 'Aucun bail selectionner';
+        double frais = doc.get('fraisVisite') ?? 0.0;
+        String description = doc.get('description') ?? 'Aucune description ajouté';
+        String gestionnaireNom = doc.get('gestionnaireNom') ?? 'geré par vous meme';
+
+        Future<void> creneauxFuture = FirestoreService()
+            .getCreneauxForLogement(logementId)
+            .first 
+            .then((creneauxSnapshot) {
+          List<Map<String, dynamic>> creneauxList = creneauxSnapshot.docs
+              .map((doc) => doc.data() as Map<String, dynamic>)
+              .toList();
+
+          listeLogement.add(Logement(
+            id: logementId,
+            adresse: adresse,
+            titre: titre,
+            typeProperty: typeProperty,
+            latitude: latitude,
+            longitude: longitude,
+            photo1: photo1,
+            loyerJour: loyerJour,
+            loyerMois: loyerMois,
+            chambres: chambres,
+            surface: surface,
+            statut: statut,
+            balcons: balcons,
+           cuisines: cuisines,
+            etages: etages,
+            salleDeBains: salleDeBains,
+            parking: parking,
+            salons: salons,
+            fraisDeVisite: frais,
+            estClimatise: estClimatise,
+            estMeuble: estMeuble,
+            estSanitaire: estSanitaire,
+            typeDeBail: typeDeBail,
+            conditionAdmission: conditionAdmission,
+            description: description,
+            photo2: photo2,
+            photo3: photo3,
+            terrasses: terrasses,
+            avance: avance,
+            gestionnaireNom: gestionnaireNom,
+            etat: etat,
+            mode: mode,
+            creneaux: creneauxList,
+          ));
+        }).catchError((error) {
+          print("Erreur lors du chargement des créneaux pour $logementId: $error");
+          
+          listeLogement.add(Logement(
+            id: logementId,
+            adresse: adresse,
+            titre: titre,
+            typeProperty: typeProperty,
+            latitude: latitude,
+            longitude: longitude,
+            photo1: photo1,
+            loyerJour: loyerJour,
+            loyerMois: loyerMois,
+            chambres: chambres,
+            surface: surface,
+            statut: statut,
+            balcons: balcons,
+            cuisines: cuisines,
+            etages: etages,
+            salleDeBains: salleDeBains,
+            parking: parking,
+            salons: salons,
+            fraisDeVisite: frais,
+            estClimatise: estClimatise,
+            estMeuble: estMeuble,
+            estSanitaire: estSanitaire,
+            typeDeBail: typeDeBail,
+            conditionAdmission: conditionAdmission,
+            description: description,
+            photo2: photo2,
+            photo3: photo3,
+            terrasses: terrasses,
+            avance: avance,
+            gestionnaireNom: gestionnaireNom,
+            etat: etat,
+            mode: mode,
+            creneaux: [],
+          ));
         });
+
+        creneauxFutures.add(creneauxFuture);
+
+      } catch (e) {
+        print("Erreur sur un document logement: $e");
       }
-      return;
     }
 
-    print("Chargement des logements...");
-
-    FirestoreService().getLogement(currentUser.uid).listen((snapshot) {
-      print("Données reçues: ${snapshot.docs.length} logements");
-      List<Logement> listeLogement = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          String logementId = doc.id;
-          String titre = doc.get('titre') ?? 'Titre non disponible';
-          String adresse = doc.get('adresse') ?? 'Adresse non disponible';
-          String typeProperty =
-              doc.get('propertyType') ?? 'Type non disponible';
-          String photo1 = doc.get('photo1') ?? '';
-          double surface = doc.get('surface') ?? 0.0;
-          double latitude = doc.get('latitude') ?? 0.0;
-          double longitude = doc.get('longitude') ?? 0.0;
-          double loyerJour = doc.get('loyerJour') ?? 0.0;
-          double loyerMois = doc.get('loyerMois') ?? 0.0;
-          int chambres = doc.get('chambres') ?? 0;
-          String statut = doc.get('statut') ?? 'statut non disponible';
-          String mode = doc.get('mode') ?? 'mode non disponible';
-          listeLogement.add(
-            Logement(
-                id: logementId,
-                adresse: adresse,
-                titre: titre,
-                typeProperty: typeProperty,
-                latitude: latitude,
-                longitude: longitude,
-                photo1: photo1,
-                loyerJour: loyerJour,
-                loyerMois: loyerMois,
-                chambres: chambres,
-                surface: surface,
-                statut: statut,
-                mode: mode),
-          );
-        } catch (e) {
-          print("Erreur sur un document logement: $e");
-        }
-      }
-      setState(() {
-        logements = listeLogement;
-        print("Logements chargés: ${logements.length}");
-      });
-    }, onError: (error) {
-      print("Erreur lors du chargement des logements: $error");
+    await Future.wait(creneauxFutures);
+    
+    setState(() {
+      logements = listeLogement;
+      print("Logements chargés: ${logements.length}");
     });
-  }
+  }, onError: (error) {
+    print("Erreur lors du chargement des logements: $error");
+  });
+}
 
   @override
   void initState() {
@@ -323,7 +416,15 @@ void showProprietairesDialog(String logementId) async {
                                   Column(
                                     children: [
                                       TextButton(
-                                        onPressed: () {},
+                                        onPressed: () {
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      PageDetailsProprietaire(
+                                                          logement: logements[
+                                                              index])));
+                                        },
                                         child: const Text(
                                           "Voir plus",
                                           style: TextStyle(

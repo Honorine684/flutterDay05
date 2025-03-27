@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
+import 'package:houeto/Pages/Gestion.dart';
 import 'package:houeto/Pages/Home.dart';
 import 'package:houeto/Pages/SeeAllBien.dart';
 import 'package:houeto/Pages/pageProfile.dart';
@@ -30,71 +31,91 @@ class _BottombarState extends State<Bottombar> {
       extendBody: true, 
 
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(), 
-        notchMargin: 8.0,
+        shape: const AutomaticNotchedShape(
+          RoundedRectangleBorder(),
+          StadiumBorder(side: BorderSide()),
+        ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            IconButton(
-              icon: Icon(
-                Icons.home,
-                color: selected == 0 ? Colors.teal : Colors.grey,
-              ),
-              onPressed: () {
-                setState(() {
-                  selected = 0;
-                  controller.jumpToPage(0);
-                });
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.home,
+                    color: selected == 0 ? Colors.teal : Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      selected = 0;
+                      controller.jumpToPage(0);
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.real_estate_agent_rounded,
+                    color: selected == 1 ? Colors.blue : Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      selected = 1;
+                      controller.jumpToPage(1);
+                    });
+                  },
+                ),
+              ],
             ),
-            IconButton(
-              icon: Icon(
-                Icons.real_estate_agent_rounded,
-                color: selected == 1 ? Colors.blue : Colors.grey,
-              ),
-              onPressed: () {
-                setState(() {
-                  selected = 1;
-                  controller.jumpToPage(1);
-                });
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.golf_course_rounded,
+                    color: selected == 2 ? Colors.deepOrangeAccent : Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      selected = 2;
+                      controller.jumpToPage(2);
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.person,
+                    color: selected == 3 ? Colors.red : Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      selected = 3;
+                      controller.jumpToPage(3);
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.person,
+                    color: selected == 4 ? Colors.red : Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      selected = 4;
+                      controller.jumpToPage(4);
+                    });
+                  },
+                ),
+              ],
             ),
-            const SizedBox(width: 48), // Espace pour le bouton flottant
-            IconButton(
-              icon: Icon(
-                Icons.golf_course_rounded,
-                color: selected == 2 ? Colors.deepOrangeAccent : Colors.grey,
-              ),
-              onPressed: () {
-                setState(() {
-                  selected = 2;
-                  controller.jumpToPage(2);
-                });
-              },
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.person,
-                color: selected == 3 ? Colors.red : Colors.grey,
-              ),
-              onPressed: () {
-                setState(() {
-                  selected = 3;
-                  controller.jumpToPage(3);
-                });
-              },
-            ),
-            
           ],
         ),
       ),
 
-      // Bouton flottant centré
+      // Bouton flottant à droite
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          setState(() {
-            Navigator.push(context, MaterialPageRoute(builder: (context)=> const Addlogement()));
-          });
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> const Addlogement()));
         },
         backgroundColor: Colors.white,
         child: Icon(
@@ -102,16 +123,16 @@ class _BottombarState extends State<Bottombar> {
           color: Colors.blue,
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
 
       // Corps de la page
       body: SafeArea(
         child: PageView(
           controller: controller,
-          children: const [
-            //Homegestion(),
+          children: [
+          PageAccueil(),            
             Home(),
-            Seeallbien() ,
+            Seeallbien(),
             PageVisites(),
             PageProfile(),
           ],

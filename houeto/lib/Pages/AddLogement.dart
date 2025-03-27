@@ -262,10 +262,12 @@ class AddlogementState extends State<Addlogement> {
           int.tryParse(logementData['annee_construction'].toString()) ?? 0;
       int nbreDeChambre =
           int.tryParse(logementData['chambres'].toString()) ?? 0;
-      int nbreDeCuisine =
+     int nbreDeCuisine =
           int.tryParse(logementData['cuisines'].toString()) ?? 0;
       int nbreDeSalleDeBain =
           int.tryParse(logementData['salles_de_bain'].toString()) ?? 0;
+      int etages =
+          int.tryParse(logementData['etages'].toString()) ?? 0;    
       int nbreDeSalons = int.tryParse(logementData['salons'].toString()) ?? 0;
       int nbreDeTerrasse =
           int.tryParse(logementData['terrasses'].toString()) ?? 0;
@@ -329,7 +331,9 @@ class AddlogementState extends State<Addlogement> {
         photo4,
         description,
         latitude,
-        longitude
+        etages,
+        longitude,
+        
       );
 
       print("Logement ajouté avec succès !");

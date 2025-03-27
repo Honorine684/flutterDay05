@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Component/SeeAllBienWidget.dart';
 import 'package:houeto/JsonModels/Logement.dart';
+import 'package:houeto/Pages/PageDetails.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
 import 'dart:convert';
 
@@ -16,81 +17,182 @@ class Seeallbien extends StatefulWidget {
 
 class SeeallbienState extends State<Seeallbien> {
   List<Logement> logements = [];
-  StreamSubscription? _logementSubscription; 
-  
- void loadLogement() async {
-  User? currentUser = FirebaseAuth.instance.currentUser;
-  
-  if (currentUser == null) {
-    print("Aucun utilisateur connecté");
-    if (mounted) {
-      setState(() {
-        logements = []; 
-      });
+  StreamSubscription? _logementSubscription;
+
+  void loadLogement() async {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      print("Aucun utilisateur connecté");
+      if (mounted) {
+        setState(() {
+          logements = [];
+        });
+      }
+      return;
     }
-    return;
+
+    print("Chargement des logements pour l'utilisateur ${currentUser.uid}...");
+
+    _logementSubscription?.cancel();
+
+    _logementSubscription = FirestoreService()
+        .getLogement(currentUser.uid)
+        .listen((snapshot) async {
+      print("Données reçues: ${snapshot.docs.length} logements");
+      List<Logement> listeLogement = [];
+      List<Future<void>> creneauxFutures = [];
+
+      for (var doc in snapshot.docs) {
+        try {
+          String logementId = doc.id;
+          String titre = doc.get('titre') ?? 'Titre non disponible';
+          String adresse = doc.get('adresse') ?? 'Adresse non disponible';
+          String typeProperty =
+              doc.get('propertyType') ?? 'Type non disponible';
+          String photo1 = doc.get('photo1') ?? '';
+          double surface = doc.get('surface') ?? 0.0;
+          double latitude = doc.get('latitude') ?? 0.0;
+          double longitude = doc.get('longitude') ?? 0.0;
+          double loyerJour = doc.get('loyerJour') ?? 0.0;
+          double loyerMois = doc.get('loyerMois') ?? 0.0;
+          int chambres = doc.get('chambres') ?? 0;
+          String statut = doc.get('statut') ?? 'statut non disponible';
+          String mode = doc.get('mode') ?? 'mode non disponible';
+          String photo2 = doc.get('photo2') ?? '';
+          String photo3 = doc.get('photo3') ?? '';
+          int salleDeBains = doc.get('salles_de_bain') ?? 0;
+          int cuisines = doc.get('cuisines') ?? 0;
+          int salons = doc.get('salons') ?? 0;
+          int terrasses = doc.get('terrasses') ?? 0;
+          int balcons = doc.get('balcons') ?? 0;
+          int parking = doc.get('parking') ?? 0;
+          int etages = doc.get('etages') ?? 0;
+          String etat = doc.get('etat') ?? 'aucun etat';
+          bool estSanitaire = doc.get('estSanitaire');
+          bool estMeuble = doc.get('estMeuble');
+          bool estClimatise = doc.get('estClimatise');
+          double avance = doc.get('avance') ?? 0.0;
+          String conditionAdmission =
+              doc.get('conditionAdmission') ?? 'accepte tous le monde';
+          String typeDeBail =
+              doc.get('typeDeBail') ?? 'Aucun bail selectionner';
+          double frais = doc.get('fraisVisite') ?? 0.0;
+          String description =
+              doc.get('description') ?? 'Aucune description ajouté';
+          String gestionnaireNom =
+              doc.get('gestionnaireNom') ?? 'geré par vous meme';
+          Future<void> creneauxFuture = FirestoreService()
+              .getCreneauxForLogement(logementId)
+              .first
+              .then((creneauxSnapshot) {
+            List<Map<String, dynamic>> creneauxList = creneauxSnapshot.docs
+                .map((doc) => doc.data() as Map<String, dynamic>)
+                .toList();
+
+            listeLogement.add(
+              Logement(
+                  id: logementId,
+                  adresse: adresse,
+                  titre: titre,
+                  typeProperty: typeProperty,
+                  latitude: latitude,
+                  longitude: longitude,
+                  photo1: photo1,
+                  loyerJour: loyerJour,
+                  loyerMois: loyerMois,
+                  chambres: chambres,
+                  surface: surface,
+                  statut: statut,
+                  balcons: balcons,
+                  cuisines: cuisines,
+                  etages: etages,
+                  salleDeBains: salleDeBains,
+                  parking: parking,
+                  salons: salons,
+                  fraisDeVisite: frais,
+                  estClimatise: estClimatise,
+                  estMeuble: estMeuble,
+                  estSanitaire: estSanitaire,
+                  typeDeBail: typeDeBail,
+                  conditionAdmission: conditionAdmission,
+                  description: description,
+                  photo2: photo2,
+                  photo3: photo3,
+                  terrasses: terrasses,
+                  avance: avance,
+                  gestionnaireNom: gestionnaireNom,
+                  etat: etat,
+                  mode: mode,
+                  creneaux: creneauxList),
+            );
+          }).catchError((error) {
+            print(
+                "Erreur lors du chargement des créneaux pour $logementId: $error");
+
+            listeLogement.add(
+              Logement(
+                  id: logementId,
+                  adresse: adresse,
+                  titre: titre,
+                  typeProperty: typeProperty,
+                  latitude: latitude,
+                  longitude: longitude,
+                  photo1: photo1,
+                  loyerJour: loyerJour,
+                  loyerMois: loyerMois,
+                  chambres: chambres,
+                  surface: surface,
+                  statut: statut,
+                  balcons: balcons,
+                  cuisines: cuisines,
+                  etages: etages,
+                  salleDeBains: salleDeBains,
+                  parking: parking,
+                  salons: salons,
+                  fraisDeVisite: frais,
+                  estClimatise: estClimatise,
+                  estMeuble: estMeuble,
+                  estSanitaire: estSanitaire,
+                  typeDeBail: typeDeBail,
+                  conditionAdmission: conditionAdmission,
+                  description: description,
+                  photo2: photo2,
+                  photo3: photo3,
+                  terrasses: terrasses,
+                  avance: avance,
+                  gestionnaireNom: gestionnaireNom,
+                  etat: etat,
+                  mode: mode,
+                  creneaux: []),
+            );
+          });
+
+          creneauxFutures.add(creneauxFuture);
+        } catch (e) {
+          print("Erreur sur un document logement: $e");
+        }
+      }
+
+      await Future.wait(creneauxFutures);
+
+      if (mounted) {
+        setState(() {
+          logements = listeLogement;
+          print("Logements chargés: ${logements.length}");
+        });
+      }
+    }, onError: (error) {
+      print("Erreur lors du chargement des logements: $error");
+    });
   }
 
-  print("Chargement des logements pour l'utilisateur ${currentUser.uid}...");
+  @override
+  void initState() {
+    super.initState();
+    loadLogement();
+  }
 
-  _logementSubscription?.cancel();
-
-  _logementSubscription = FirestoreService().getLogement(currentUser.uid).listen((snapshot) {
-    print("Données reçues: ${snapshot.docs.length} logements");
-    List<Logement> listeLogement = [];
-
-    for (var doc in snapshot.docs) {
-      try {
-        String logementId = doc.id;
-        String titre = doc.get('titre') ?? 'Titre non disponible';
-        String adresse = doc.get('adresse') ?? 'Adresse non disponible';
-        String typeProperty = doc.get('propertyType') ?? 'Type non disponible';
-        String photo1 = doc.get('photo1') ?? '';
-        double surface = doc.get('surface') ?? 0.0;
-        double latitude = doc.get('latitude') ?? 0.0;
-        double longitude = doc.get('longitude') ?? 0.0;
-        double loyerJour = doc.get('loyerJour') ?? 0.0;
-        double loyerMois = doc.get('loyerMois') ?? 0.0;
-        int chambres = doc.get('chambres') ?? 0;
-         String statut =
-              doc.get('statut') ?? 'statut non disponible';
-        listeLogement.add(
-          Logement(
-            id: logementId,
-            adresse: adresse,
-            titre: titre,
-            typeProperty: typeProperty,
-            latitude: latitude,
-            longitude: longitude,
-            photo1: photo1,
-            loyerJour: loyerJour,
-            loyerMois: loyerMois,
-            chambres: chambres,
-            surface: surface,
-            statut: statut
-          ),
-        );
-      } catch (e) {
-        print("Erreur sur un document logement: $e");
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        logements = listeLogement;
-        print("Logements chargés: ${logements.length}");
-      });
-    }
-  }, onError: (error) {
-    print("Erreur lors du chargement des logements: $error");
-  });
-}
-
-@override
-void initState() {
-  super.initState();
-  loadLogement();
-}
   @override
   void dispose() {
     _logementSubscription?.cancel();
@@ -182,7 +284,7 @@ void initState() {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            "${logements.length} résultats trouvés", 
+                            "${logements.length} résultats trouvés",
                             style: TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w300),
                           ),
@@ -208,9 +310,15 @@ void initState() {
                           scrollDirection: Axis.vertical,
                           itemCount: logements.length,
                           itemBuilder: (context, index) {
-                            return Container(
+                            return GestureDetector(
+                              onTap: (){
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=> PageDetailsProprietaire(logement: logements[index],)));
+                              },
+                              child: Container(
                               width: MediaQuery.of(context).size.width * 0.88,
-                              margin: const EdgeInsets.symmetric(vertical: 8,),
+                              margin: const EdgeInsets.symmetric(
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
                                 color: Colors.white,
@@ -300,7 +408,9 @@ void initState() {
                                                 color: Colors.grey,
                                               ),
                                               Text(
-                                                  "${logements[index].surface.toString()} m²",overflow: TextOverflow.ellipsis,)
+                                                "${logements[index].surface.toString()} m²",
+                                                overflow: TextOverflow.ellipsis,
+                                              )
                                             ],
                                           ),
                                           SizedBox(height: 4),
@@ -316,6 +426,7 @@ void initState() {
                                   ),
                                 ],
                               ),
+                            ),
                             );
                           },
                         ),

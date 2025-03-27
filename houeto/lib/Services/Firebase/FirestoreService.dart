@@ -13,7 +13,7 @@ class FirestoreService {
     double surface,
     int anneDeConstruction,
     int nbreDeChambre, 
-    int nbreDeCuisine,
+   int nbreDeCuisine,
     int nbreDeSalleDeBain,
     int nbreDeSalons,
     int nbreDeTerrasse,
@@ -37,11 +37,14 @@ class FirestoreService {
     String photo4,
     String description,
     double latitude,
-    double longitude, {
+    int etages ,
+    double longitude,
+    {
     String mode = "Non confier", 
     String statut = "Inocupper",
     String gestionnaireId = '',
     String gestionnaireNom = '',
+   
   }) async{ 
     // Ajouter le logement principal
     DocumentReference logementRef = await logement.add({
@@ -55,6 +58,8 @@ class FirestoreService {
       'salles_de_bain': nbreDeSalleDeBain,
       'terrasses': nbreDeTerrasse,
       'balcons': nbreDeBalcon,
+      'cuisines':nbreDeCuisine,
+      'etages':etages,
       'parking': nbreDeParking,
       'estSanitaire': estSanitaire,
       'estMeuble': estMeuble,
@@ -195,5 +200,26 @@ Future<void> deleteLogement(String idLogement)async{
   return logement.doc(idLogement).delete();
 }
 
-
+  // Récupérer les créneaux d'un médecin
+  Stream<QuerySnapshot> getCreneauxForLogement(String logementId) {
+    try {
+      final creneauStream = FirebaseFirestore.instance
+          .collection('logement')
+          .doc(logementId)
+          .collection('joursDisponibles')
+          .snapshots();
+      creneauStream.listen((snapshot) {
+        print("Créneaux récupérés pour le logement $logementId: ${snapshot.docs.length}");
+      });
+      return creneauStream;
+    } catch (e) {
+      print("Erreur lors de la récupération des créneaux: $e");
+      rethrow;
+    }
+  }
+  Stream<QuerySnapshot> getLogementForGestionnaire(){
+    final gestionnaireCreneau = logement.
+    where('mode',isEqualTo: 'Confier').snapshots();
+    return gestionnaireCreneau;
+  }
 }
