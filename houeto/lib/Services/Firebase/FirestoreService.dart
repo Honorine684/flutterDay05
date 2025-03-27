@@ -200,7 +200,6 @@ Future<void> deleteLogement(String idLogement)async{
   return logement.doc(idLogement).delete();
 }
 
-  // Récupérer les créneaux d'un médecin
   Stream<QuerySnapshot> getCreneauxForLogement(String logementId) {
     try {
       final creneauStream = FirebaseFirestore.instance
@@ -217,9 +216,11 @@ Future<void> deleteLogement(String idLogement)async{
       rethrow;
     }
   }
-  Stream<QuerySnapshot> getLogementForGestionnaire(){
+  Stream<QuerySnapshot> getLogementForWithGestionnaire(String userId){
     final gestionnaireCreneau = logement.
-    where('mode',isEqualTo: 'Confier').snapshots();
+    where('mode',isEqualTo: 'Confier').
+    where('proprietaireId',isEqualTo:userId).
+    snapshots();
     return gestionnaireCreneau;
   }
 }

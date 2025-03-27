@@ -177,11 +177,11 @@ _buildDetailSection(
                     ],
                   ),
                   
-                  if (logement.gestionnaireNom.isNotEmpty)
+                 // if (logement.gestionnaireNom.isNotEmpty)
                     _buildDetailSection(
                       title: 'Gestion',
                       items: [
-                        _DetailItem('Gestionnaire', logement.gestionnaireNom),
+                        _DetailItem('Gestionnaire', logement.gestionnaireNom??"gerer par moi meme"),
                       ],
                     ),
                   

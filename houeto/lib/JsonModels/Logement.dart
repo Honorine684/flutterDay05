@@ -29,7 +29,7 @@ class Logement {
   final int terrasses;
   double avance;
   double fraisDeVisite;
-  final String gestionnaireNom;
+  final String? gestionnaireNom;
   final String etat;
   final List<Map<String,dynamic>> creneaux;
   Logement({
@@ -63,7 +63,7 @@ class Logement {
     required this.photo3,
     required this.terrasses,
     required this.avance,
-    required this.gestionnaireNom,
+    this.gestionnaireNom,
     required this.etat,
     required this.creneaux, 
     
