@@ -64,7 +64,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           IconButton(
             icon: Icon(Icons.more_vert, color: Colors.black87),
             onPressed: () {
-              // Options supplémentaires
+              
             },
           ),
         ],
@@ -146,7 +146,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
               ),
               onTap: () {
-                // Action lors du tap sur une notification
+                
               },
             ),
           );
