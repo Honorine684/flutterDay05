@@ -64,7 +64,7 @@ class AuthService {
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
       debugPrint("Erreur lors de l'inscription : ${e.message}");
-      throw e;
+      rethrow;
     }
   }
 
@@ -79,7 +79,7 @@ class AuthService {
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
       debugPrint("Erreur lors de la connexion : ${e.message}");
-      throw e;
+      rethrow;
     }
   }
 
@@ -121,7 +121,7 @@ class AuthService {
       debugPrint("Email de vérification envoyé à ${user.email}");
     } on FirebaseAuthException catch (e) {
       debugPrint("Erreur lors de l'envoi de l'email : ${e.message}");
-      throw e;
+      rethrow;
     }
   }
 

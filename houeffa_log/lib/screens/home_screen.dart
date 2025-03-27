@@ -149,6 +149,36 @@ class _HomePageState extends State<HomeScreen> {
                                     style: TextStyle(color: Colors.black.withOpacity(0.6)),
                                   ),
                                   const SizedBox(height: 8),
+
+                                  // 👉 Ajout des 3 icônes sous la description
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.bed, color: Colors.orange),
+                                          const SizedBox(width: 4),
+                                          Text('${logement['chambres'] ?? 0} ch.')
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.square_foot, color: Colors.orange),
+                                          const SizedBox(width: 4),
+                                          Text('${logement['surface'] ?? 'N/D'} m²')
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.info, color: Colors.orange),
+                                          const SizedBox(width: 4),
+                                          Text(logement['statut'] ?? 'N/D')
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 8),
                                   Align(
                                     alignment: Alignment.centerRight,
                                     child: TextButton(
