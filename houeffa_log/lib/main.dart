@@ -16,6 +16,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   runApp(const MyApp());
 }
 
@@ -28,7 +29,7 @@ class MyApp extends StatelessWidget {
       title: 'Houeffa',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.orange,
         useMaterial3: true, 
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
@@ -57,7 +58,7 @@ class SplashScreen extends StatelessWidget {
     });
 
     return Scaffold(
-      backgroundColor: Colors.blue.shade50,
+      backgroundColor: Colors.orange,
       body: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -67,7 +68,7 @@ class SplashScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: Colors.white,
               ),
             ),
             SizedBox(height: 20),
@@ -120,7 +121,7 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Colors.orange,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
@@ -128,8 +129,8 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: Colors.white,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
-          BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Explorer'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Gestion'),
+          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Explorer'),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Gestion'),
           BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Services'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
