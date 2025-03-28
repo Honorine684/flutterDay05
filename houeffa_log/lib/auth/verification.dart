@@ -1,11 +1,10 @@
-import 'dart:async'; 
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'package:houeffa_log/wrapper.dart';
 
 class VerificationScreen extends StatefulWidget {
-  final User user; 
+  final User user;
 
   const VerificationScreen({super.key, required this.user});
 
@@ -20,14 +19,14 @@ class _VerificationScreenState extends State<VerificationScreen> {
   @override
   void initState() {
     super.initState();
-   
-    _auth.sendEmailVerificationLink(widget.user); 
-    
-    timer = Timer.periodic(Duration(seconds: 5), (timer) async {
+
+    _auth.sendEmailVerificationLink(widget.user);
+
+    timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       await FirebaseAuth.instance.currentUser?.reload();
       if (FirebaseAuth.instance.currentUser!.emailVerified) {
         timer.cancel();
-        if (mounted) { 
+        if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const Wrapper()),
@@ -39,7 +38,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   @override
   void dispose() {
-    timer.cancel(); 
+    timer.cancel();
     super.dispose();
   }
 
@@ -47,27 +46,28 @@ class _VerificationScreenState extends State<VerificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Vérification - HouefFa Toit"),
+        title: const Text("Vérification - HouefFa Toit"),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 20),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 20),
             Text(
               "Un email de vérification a été envoyé à ${widget.user.email}.",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                await _auth.sendEmailVerificationLink(widget.user);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Email de vérification renvoyé")),
+                  const SnackBar(content: Text("Email de vérification renvoyé")),
                 );
               },
-              child: Text("Renvoyer l'email"),
+              child: const Text("Renvoyer l'email"),
             ),
           ],
         ),
@@ -75,7 +75,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
     );
   }
 }
-
 
 class AuthService {
   Future<void> sendEmailVerificationLink(User user) async {

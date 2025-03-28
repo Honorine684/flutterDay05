@@ -1,4 +1,3 @@
-// android/app/build.gradle.kts
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
@@ -14,6 +13,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true // Correction : utiliser 'isCoreLibraryDesugaringEnabled'
     }
 
     kotlinOptions {
@@ -21,10 +21,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.houeffa_log"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -42,10 +39,6 @@ flutter {
     source = "../.."
 }
 
-//dependencies {
-  //  implementation("io.flutter:flutter_embedding_debug:1.0.0")
-  //  implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
-   // implementation("com.google.firebase:firebase-auth")
-   // implementation("com.google.firebase:firebase-firestore")
-   // implementation("com.google.android.gms:play-services-auth:21.2.0")
-//}
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // Dépendance pour le desugaring
+}
