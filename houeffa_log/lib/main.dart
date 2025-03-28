@@ -3,22 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:houeffa_log/ui/notificationpush.dart';
 import 'package:houeffa_log/wrapper.dart';
 import 'package:houeffa_log/auth/login.dart';
-import 'package:houeffa_log/auth/verification.dart';
+import 'package:houeffa_log/auth/verification.dart'; // Votre VerificationScreen
 import 'package:houeffa_log/ui/profil.dart';
-
+import 'package:houeffa_log/ui/notificationpush.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/gl_screen.dart';
 import 'screens/services_screen.dart';
 
-
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -29,7 +25,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-
+  // Initialisation de Firebase
   try {
     print("Initialisation de Firebase...");
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -39,9 +35,9 @@ void main() async {
     return;
   }
 
- 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  // Initialisation des notifications locales
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
   const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
@@ -75,6 +71,8 @@ void main() async {
   } catch (e) {
     print("Erreur lors de l'initialisation des notifications locales : $e");
   }
+
+  // Demande de permission FCM
   try {
     print("Demande de permission pour notifications...");
     await FirebaseMessaging.instance.requestPermission();
@@ -109,12 +107,14 @@ class MyApp extends StatelessWidget {
         '/wrapper': (context) => const Wrapper(),
         '/main': (context) => const MainScreen(),
         '/login': (context) => const LoginScreen(),
-        '/verification': (context) => VerificationScreen(
-              user: ModalRoute.of(context)!.settings.arguments as User,
-            ),
-        '/notification': (context) => NotificationPage(
-              logementId: ModalRoute.of(context)!.settings.arguments as String?,
-            ),
+        '/verification': (context) {
+          final user = ModalRoute.of(context)?.settings.arguments as User?;
+          if (user == null) {
+            return const Scaffold(body: Center(child: Text("Utilisateur requis")));
+          }
+          return VerificationScreen(user: user);
+        },
+        '/notification': (context) => const NotificationPage(),
       },
     );
   }
@@ -184,7 +184,7 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     print("Initialisation de MainScreen");
 
-    // Gestion des notifications en avant-plan
+    // Notifications en avant-plan
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print("Notification en avant-plan : ${message.notification?.title}");
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
@@ -213,7 +213,7 @@ class _MainScreenState extends State<MainScreen> {
       );
     });
 
-    // Gestion des notifications ouvertes (depuis arrière-plan ou terminé)
+    // Notifications ouvertes
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print("Notification ouverte : ${message.data}");
       navigatorKey.currentState?.push(
@@ -227,7 +227,7 @@ class _MainScreenState extends State<MainScreen> {
       );
     });
 
-    // Vérifier si l'app a été ouverte par une notification au démarrage
+    // Vérification au démarrage
     FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         print("App ouverte par une notification : ${message.data}");
