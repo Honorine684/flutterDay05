@@ -22,7 +22,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform
   );
    runApp(MaterialApp(
-   home: ApplicationLocation(),
+   home: RecherchePage(),
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       scaffoldBackgroundColor: Colors.white,

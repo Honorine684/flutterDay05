@@ -1,51 +1,51 @@
 import 'package:flutter/material.dart';
 
-class TenantSearcPage extends StatefulWidget {
+class RecherchePage extends StatefulWidget {
   @override
-  _TenantSearchPageState createState() => _TenantSearchPageState();
+  _RecherchePageState createState() => _RecherchePageState();
 }
 
-class _TenantSearchPageState extends State<TenantSearchPage> {
+class _RecherchePageState extends State<RecherchePage> {
 
-  final List<Map<String, String>> allTenants = [
+  final List<Map<String, String>> locataire = [
     {
-      'name': 'ELISHA Richard',
+      'nom': 'ELISHA Richard',
       'location': 'A Cotonou',
-      'time': '14 min',
+      'heure': '14 min',
       'image': 'assets/images/fig2.jpg'
     },
     {
-      'name': 'Bro Vivien Jeek',
+      'nom': 'Bro Vivien Jeek',
       'location': 'A Fidjrossè',
-      'time': '14 min',
+      'heure': '14 min',
       'image': 'assets/images/fig2.jpg'
     },
     {
-      'name': 'Elon Musk Rich',
+      'nom': 'Elon Musk Rich',
       'location': 'A Toffo',
-      'time': '14 min',
+      'heure': '14 min',
       'image': 'assets/images/fig2.jpg'
     },
   ];
 
 
-  List<Map<String, String>> filteredTenants = [];
+  List<Map<String, String>> filtresLocataires = [];
 
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Initialiser avec tous les locataires
-    filteredTenants = allTenants;
+  
+    filtresLocataires = locataire;
     _searchController.addListener(_filterTenants);
   }
 
   void _filterTenants() {
     String query = _searchController.text.toLowerCase();
     setState(() {
-      filteredTenants = allTenants.where((tenant) {
-        return tenant['name']!.toLowerCase().contains(query) ||
+   filtresLocataires = locataire.where((tenant) {
+        return tenant['nom']!.toLowerCase().contains(query) ||
                tenant['location']!.toLowerCase().contains(query);
       }).toList();
     });
@@ -99,8 +99,7 @@ class _TenantSearchPageState extends State<TenantSearchPage> {
               ),
             ),
             SizedBox(height: 16),
-            
-            // Barre de recherche
+       
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -117,7 +116,7 @@ class _TenantSearchPageState extends State<TenantSearchPage> {
             SizedBox(height: 16),
 
             Expanded(
-              child: filteredTenants.isEmpty
+              child: filtresLocataires.isEmpty
                   ? Center(
                       child: Text(
                         'Aucun locataire trouvé',
@@ -125,9 +124,9 @@ class _TenantSearchPageState extends State<TenantSearchPage> {
                       ),
                     )
                   : ListView.builder(
-                      itemCount: filteredTenants.length,
+                      itemCount: filtresLocataires.length,
                       itemBuilder: (context, index) {
-                        return _buildTenantCard(filteredTenants[index]);
+                        return _locataireCarte(filtresLocataires[index]);
                       },
                     ),
             ),
@@ -137,7 +136,7 @@ class _TenantSearchPageState extends State<TenantSearchPage> {
     );
   }
 
-  Widget _buildTenantCard(Map<String, String> tenant) {
+  Widget _locataireCarte(Map<String, String> tenant) {
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
