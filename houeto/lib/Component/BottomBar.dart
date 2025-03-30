@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
 import 'package:houeto/Pages/Gestion.dart';
 import 'package:houeto/Pages/Home.dart';
+import 'package:houeto/Pages/DashboardProprio.dart';
 import 'package:houeto/Pages/SeeAllBien.dart';
 import 'package:houeto/Pages/pageProfile.dart';
 import 'package:houeto/Pages/pageVisite.dart';
@@ -130,7 +131,8 @@ class _BottombarState extends State<Bottombar> {
         child: PageView(
           controller: controller,
           children: [
-          PageAccueil(),            
+          ProprioDashboard(),
+          //PageAccueil(),            
             Home(),
             Seeallbien(),
             PageVisites(),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:houeto/JsonModels/ContratService.dart';
 import 'package:houeto/JsonModels/NotificationPushVisite.dart';
+import 'package:houeto/Pages/ContratForm.dart';
 import 'package:intl/intl.dart';
 
 class PageVisites extends StatefulWidget {
@@ -249,7 +251,7 @@ else if (visite['statut'] == 'Confirmer') ...[
   const SizedBox(height: 12),
   Row(mainAxisAlignment: MainAxisAlignment.end, children: [
     ElevatedButton.icon(
-      icon: const Icon(Icons.document_scanner_rounded),
+      icon: const Icon(Icons.document_scanner_rounded,color: Colors.white,),
       label: const Text('Envoyer contrat'),
       onPressed: () => {
        envoyerContrat(docId, context, nomComplet, logementNom),
@@ -387,150 +389,77 @@ else if (visite['statut'] == 'Confirmer') ...[
       );
     }
   }
+
 Future<void> envoyerContrat(String visiteId, BuildContext context, String nomLocataire, String logementNom) async {
   try {
+    // 1. Initialisation
+    final contratService = ContratService();
     final firestore = FirebaseFirestore.instance;
-    
-    // Récupérer les données de la visite
+
+    // 2. Récupération des données
     final visiteDoc = await firestore.collection('visite').doc(visiteId).get();
     if (!visiteDoc.exists) throw Exception("Visite introuvable");
     
     final visiteData = visiteDoc.data() as Map<String, dynamic>;
     final locataireId = visiteData['locataireId'];
     final logementId = visiteData['logementId'];
-    
-    // Récupérer les données du logement
+
     final logementDoc = await firestore.collection('logement').doc(logementId).get();
     if (!logementDoc.exists) throw Exception("Logement introuvable");
-    
     final logementData = logementDoc.data() as Map<String, dynamic>;
-    
-    // Utiliser les données existantes du logement
-    final loyer = logementData['mode'] == 'Mois' ? logementData['loyerMois'] : logementData['loyerJour'];
-    final avance = logementData['avance'] ?? 0.0;
-    final typeDeBail = logementData['typeDeBail'] ?? 'Bail standard';
-    
-    // Afficher un dialogue de confirmation avec les détails pré-remplis
-    final confirmer = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmation du contrat'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Logement: $logementNom'),
-              Text('Locataire: $nomLocataire'),
-              Text('Loyer: ${loyer.toStringAsFixed(2)} €/${logementData['mode']}'),
-              Text('Avance/Caution: ${avance.toStringAsFixed(2)} €'),
-              Text('Type de bail: $typeDeBail'),
-              const SizedBox(height: 10),
-              const Text('Date de début du bail:'),
-              StatefulBuilder(
-                builder: (context, setState) {
-                  return Column(
-                    children: [
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(_dateDebut.isEmpty 
-                            ? 'Sélectionner la date' 
-                            : _dateDebut),
-                        onPressed: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now().add(const Duration(days: 7)),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (date != null) {
-                            setState(() {
-                              _dateDebut = DateFormat('dd/MM/yyyy').format(date);
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Durée du bail (mois)',
-                          hintText: 'Ex: 12',
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) => _duree = value,
-                        controller: TextEditingController(text: _duree),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirmer et envoyer'),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirmer != true) return;
-    
-    // Vérifier que la date de début est sélectionnée
-    if (_dateDebut.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner une date de début')),
-      );
-      return;
-    }
-    
-    // Créer le contrat dans Firestore
-    final contratId = await firestore.collection('contrats').add({
-      'logementId': logementId,
-      'locataireId': locataireId,
-      'visiteId': visiteId,
-      'loyer': loyer,
-      'avance': avance,
-      'typeBail': typeDeBail,
-      'dateDebut': _dateDebut,
-      'duree': int.tryParse(_duree) ?? 12,
-      'statut': 'En attente de signature',
-      'dateCreation': FieldValue.serverTimestamp(),
-      'paiements': [],  // Liste qui stockera l'historique des paiements
-      'modePaiement': logementData['mode'] ?? 'Mois',  // Mode de paiement (par jour ou par mois)
-    });
-    
-    // Mettre à jour la visite pour indiquer qu'un contrat a été envoyé
-    await firestore.collection('visite').doc(visiteId).update({
-      'contratEnvoye': true,
-      'contratId': contratId.id,
-    });
-    
-    // Envoyer une notification au locataire
-    await NotificationServiceVisite().sendNotificationVisite(
-      receiverId: locataireId,
-      title: "Contrat de location disponible",
-      body: "Un contrat de location pour le logement **$logementNom** vous a été envoyé. Veuillez le consulter et le signer.",
+
+    // 3. Préparation du contrat
+    final contratData = await contratService.preparerContrat(
+      locataireId: locataireId,
+      logementId: logementId,
+      logementData: logementData,
+      typeDemande: 'visite',
       visiteId: visiteId,
     );
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Contrat envoyé avec succès')),
+
+    // 4. Affichage du formulaire
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => ContratForm(
+        contratData: contratData,
+        onSubmit: (dateDebut, duree, modePaiement) async {
+          // 5. Envoi du contrat
+          await contratService.envoyerContrat(
+            contratData: {
+              ...contratData,
+              'modePaiement': modePaiement,
+            },
+            dateDebut: dateDebut,
+            duree: duree,
+          );
+
+          // 6. Notification
+          await NotificationServiceVisite().sendNotificationVisite(
+            receiverId: locataireId,
+            title: "Contrat de location prêt",
+            body: "Le contrat pour $logementNom est disponible. Montant Total: ${contratData['totalInitial'].toStringAsFixed(2)} fcfa",
+            visiteId: visiteId,
+          );
+        },
+      ),
     );
+
+    // 7. Feedback
+    if (confirmed == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Contrat envoyé avec succès'),
+          duration: Duration(seconds: 2),
+      ));
+    }
   } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erreur: ${e.toString()}')),
-    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: ${e.toString()}'),
+          duration: Duration(seconds: 2),
+      ));
+    }
   }
 }
-
-// Variables pour stocker temporairement les données du formulaire
-String _dateDebut = '';
-String _duree = '12';
 }
