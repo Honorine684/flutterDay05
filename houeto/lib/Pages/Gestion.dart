@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,6 +18,14 @@ class PageAccueil extends StatefulWidget {
 }
 
 class PageAccueilState extends State<PageAccueil> {
+    StreamSubscription? _logementSubscription;
+  StreamSubscription? _logementConfierSubscription;
+  @override
+void dispose() {
+  _logementSubscription?.cancel();
+  _logementConfierSubscription?.cancel();
+  super.dispose();
+}
   String getFirstTwoWords(String address) {
     List<String> words = address.split(' ');
     return words.length > 2 ? '${words[0]} ${words[1]}' : address;
@@ -55,7 +64,7 @@ class PageAccueilState extends State<PageAccueil> {
 
     print("Chargement des logements...");
 
-    FirestoreService().getLogement(currentUser.uid).listen((snapshot) async {
+   _logementSubscription = FirestoreService().getLogement(currentUser.uid).listen((snapshot) async {
       print("Données reçues: ${snapshot.docs.length} logements");
       List<Logement> listeLogement = [];
       List<Future<void>> creneauxFutures = [];
@@ -192,14 +201,18 @@ class PageAccueilState extends State<PageAccueil> {
 
       await Future.wait(creneauxFutures);
 
-      setState(() {
-        logements = listeLogement;
-        print("Logements chargés: ${logements.length}");
-      });
-    }, onError: (error) {
+    if(mounted) {
+        setState(() {
+          logements = listeLogement;
+          print("Logements chargés: ${logements.length}");
+        });
+      }
+    }, 
+    onError: (error) {
       print("Erreur lors du chargement des logements: $error");
-    });
-  }
+    }
+  );
+}
 
   @override
   void initState() {
@@ -665,7 +678,7 @@ class PageAccueilState extends State<PageAccueil> {
 
     print("Chargement des logements confier...");
 
-    FirestoreService().getLogementForWithGestionnaire(currentUser.uid).listen(
+   _logementConfierSubscription= FirestoreService().getLogementForWithGestionnaire(currentUser.uid).listen(
         (snapshot) async {
       print("Données reçues: ${snapshot.docs.length} logements");
       List<Logement> listeLogement = [];
@@ -806,12 +819,16 @@ class PageAccueilState extends State<PageAccueil> {
 
       await Future.wait(creneauxFutures);
 
-      setState(() {
-        logementsConfier = listeLogement;
-        print("Logements Confier chargés: ${logementsConfier.length}");
-      });
-    }, onError: (error) {
+      if (mounted) {
+        setState(() {
+          logementsConfier = listeLogement;
+          print("Logements Confier chargés: ${logementsConfier.length}");
+        });
+      }
+    },
+    onError: (error) {
       print("Erreur lors du chargement des logements: $error");
-    });
-  }
+    }
+  );
+}
 }

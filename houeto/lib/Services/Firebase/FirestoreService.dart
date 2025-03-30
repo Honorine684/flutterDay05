@@ -3,6 +3,8 @@ import 'package:houeto/JsonModels/JourDisponibilite.dart';
 
 class FirestoreService {
   final CollectionReference logement = FirebaseFirestore.instance.collection("logement");
+  final CollectionReference visites = FirebaseFirestore.instance.collection("visites");
+
 
   Future<DocumentReference<Object?>> addLogement(
    String propritaireId,
@@ -84,7 +86,7 @@ class FirestoreService {
       'nomProprietaire':nomProprietaire,
       'mode':mode,
       'gestionnaireId':gestionnaireId,
-      'gestionnairNom':gestionnaireNom,
+      'gestionnaireNom':gestionnaireNom,
       'Timestamp': Timestamp.now(),
     });
 
@@ -217,10 +219,45 @@ Future<void> deleteLogement(String idLogement)async{
     }
   }
   Stream<QuerySnapshot> getLogementForWithGestionnaire(String userId){
-    final gestionnaireCreneau = logement.
+    final gestionnaireLogement = logement.
     where('mode',isEqualTo: 'Confier').
     where('proprietaireId',isEqualTo:userId).
     snapshots();
-    return gestionnaireCreneau;
+    return gestionnaireLogement;
   }
+
+ Stream<List<Map<String, dynamic>>> getVisitesByStatus({
+  required String userId, 
+  required String status
+}) {
+  return FirebaseFirestore.instance
+      .collectionGroup('visites')
+      .where('statut', isEqualTo: status)
+      .snapshots()
+      .asyncMap((visitesSnapshot) async {
+        // Récupère d'abord les logements concernés
+        final logementsSnapshot = await FirebaseFirestore.instance
+            .collection('logement')
+            .where(
+              Filter.or(
+                Filter('proprietaireId', isEqualTo: userId),
+                Filter('gestionnaireId', isEqualTo: userId),
+              ),
+            )
+            .get();
+
+        final logementIds = logementsSnapshot.docs.map((doc) => doc.id).toList();
+        
+        return visitesSnapshot.docs
+            .where((doc) => logementIds.contains(doc['logementId']))
+            .map((doc) {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return data;
+            })
+            .toList();
+      });
 }
+}
+  
+  

@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
+
+import 'package:path_provider/path_provider.dart';
 
 class Photo extends StatefulWidget {
   final List<String?>? initialPhotos;
@@ -38,51 +41,68 @@ class PhotoState extends State<Photo> {
     }
   }
 
-  Future pickImage(int index) async {
-    final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedImage == null) return;
+Future<File?> compressImage(File file) async {
+  try {
+    final tempDir = await getTemporaryDirectory();
+    final targetPath = '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
     
-    final imageTemporary = File(pickedImage.path);
-    
-    // Vérification taille de l'image (8 Mo max)
-    final fileSize = await imageTemporary.length();
-    if (fileSize > 8 * 1024 * 1024) {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Image trop volumineuse'),
-          content: const Text('L\'image dépasse 8 Mo. Veuillez choisir une image moins volumineuse.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                pickImage(index);
-              },
-              child: const Text('Réessayer'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-    
-    // Encodage en base64
-    final bytes = await imageTemporary.readAsBytes();
-    final base64 = base64Encode(bytes);
-    
-    if (!mounted) return;
-    setState(() {
-      images[index] = imageTemporary;
-      base64Images[index] = base64;
-    });
-    
-    widget.onPhotosChanged(base64Images);
+    final result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      quality: 70, // Qualité entre 0-100 (70 est un bon compromis)
+      minWidth: 800, // Largeur maximale
+      minHeight: 800, // Hauteur maximale
+    );
+
+    return result != null ? File(result.path) : null;
+  } catch (e) {
+    print('Erreur compression: $e');
+    return null;
   }
+}
+Future pickImage(int index) async {
+  final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+  if (pickedImage == null) return;
+
+  // Compression de l'image
+  final compressedImage = await compressImage(File(pickedImage.path));
+  if (compressedImage == null) return;
+
+  // Vérification taille après compression
+  final fileSize = await compressedImage.length();
+  if (fileSize > 2 * 1024 * 1024) { // 2 Mo max après compression
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Image trop volumineuse'),
+        content: const Text('L\'image dépasse 2 Mo après compression.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              pickImage(index);
+            },
+            child: const Text('Réessayer'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  // Encodage en base64
+  final bytes = await compressedImage.readAsBytes();
+  final base64 = base64Encode(bytes);
+
+  if (!mounted) return;
+  setState(() {
+    images[index] = compressedImage;
+    base64Images[index] = base64;
+  });
+
+  widget.onPhotosChanged(base64Images);
+}
   
   void removeImage(int index) {
     setState(() {
