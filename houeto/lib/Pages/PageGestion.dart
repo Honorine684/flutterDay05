@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:buttons_tabbar/buttons_tabbar.dart';
 import 'package:houeto/JsonModels/Logement.dart';
-import 'package:houeto/Pages/NotificationsPage.dart';
+import 'package:houeto/Pages/PageDetails.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
 
 class PageGestion extends StatefulWidget {
@@ -18,14 +18,16 @@ class PageGestion extends StatefulWidget {
 }
 
 class PageGestionState extends State<PageGestion> {
-    StreamSubscription? _logementSubscription;
+  StreamSubscription? _logementSubscription;
   StreamSubscription? _logementConfierSubscription;
-  @override
+ @override
 void dispose() {
+  searchController.dispose();
   _logementSubscription?.cancel();
   _logementConfierSubscription?.cancel();
   super.dispose();
 }
+
   String getFirstTwoWords(String address) {
     List<String> words = address.split(' ');
     return words.length > 2 ? '${words[0]} ${words[1]}' : address;
@@ -64,7 +66,9 @@ void dispose() {
 
     print("Chargement des logements...");
 
-   _logementSubscription = FirestoreService().getLogement(currentUser.uid).listen((snapshot) async {
+    _logementSubscription = FirestoreService()
+        .getLogement(currentUser.uid)
+        .listen((snapshot) async {
       print("Données reçues: ${snapshot.docs.length} logements");
       List<Logement> listeLogement = [];
       List<Future<void>> creneauxFutures = [];
@@ -201,18 +205,30 @@ void dispose() {
 
       await Future.wait(creneauxFutures);
 
-    if(mounted) {
+      if (mounted) {
         setState(() {
           logements = listeLogement;
           print("Logements chargés: ${logements.length}");
         });
       }
-    }, 
-    onError: (error) {
+    }, onError: (error) {
       print("Erreur lors du chargement des logements: $error");
+    });
+  }
+
+  TextEditingController searchController = TextEditingController();
+  String searchQuery = '';
+  List<Logement> filterLogements(List<Logement> logements) {
+    if (searchQuery.isEmpty) {
+      return logements;
     }
-  );
-}
+
+    return logements.where((logement) {
+      return logement.adresse.toLowerCase().contains(searchQuery) ||
+          logement.titre.toLowerCase().contains(searchQuery) ||
+          logement.typeProperty.toLowerCase().contains(searchQuery);
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -229,20 +245,9 @@ void dispose() {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.menu, color: Colors.black),
+          icon: Icon(Icons.location_history_rounded, color: Colors.black),
           onPressed: () {},
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const NotificationsPage()));
-            },
-          ),
-        ],
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -271,10 +276,22 @@ void dispose() {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
+                controller: searchController,
                 decoration: InputDecoration(
-                  hintText: 'Recherche par adresse, ville, ...',
+                  hintText: 'Recherche par adresse, ville, titre...',
                   hintStyle: TextStyle(fontSize: 13),
                   prefixIcon: Icon(Icons.search),
+                  suffixIcon: searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              searchController.clear();
+                              searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -282,16 +299,14 @@ void dispose() {
                   filled: true,
                   fillColor: Colors.grey[200],
                 ),
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value.toLowerCase();
+                  });
+                },
               ),
               SizedBox(height: 16),
-              Text(
-                'Bienvenue cher HoueTo',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 16),
+            
               SafeArea(
                 child: DefaultTabController(
                   length: 2,
@@ -333,18 +348,28 @@ void dispose() {
 
   Widget cartePropriete(BuildContext context) {
     final largeurEcran = MediaQuery.of(context).size.width;
-    if (logements.isEmpty) {
+    final filteredLogements = filterLogements(logements);
+    if (filteredLogements.isEmpty) {
       return Center(
-        child: Text("Aucun logement géré par vous-même"),
+        child: Text(searchQuery.isEmpty
+            ? "Aucun logement géré par vous-même"
+            : "Aucun résultat trouvé"),
       );
     }
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.75,
+      height: MediaQuery.of(context).size.height * 0.88,
       child: ListView.builder(
-          itemCount: logements.length,
+          padding: EdgeInsets.only(bottom: 20),
+          itemCount: filteredLogements.length,
           itemBuilder: (context, index) {
             return GestureDetector(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => PageDetailsProprietaire(
+                            logement: filteredLogements[index])));
+              },
               child: Card(
                 elevation: 8,
                 child: SizedBox(
@@ -355,9 +380,9 @@ void dispose() {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: logements[index].photo1.isNotEmpty
+                        child: filteredLogements[index].photo1.isNotEmpty
                             ? Image.memory(
-                                base64Decode(logements[index].photo1),
+                                base64Decode(filteredLogements[index].photo1),
                                 width: MediaQuery.of(context).size.width * 0.3,
                                 height: 150,
                                 fit: BoxFit.cover,
@@ -404,11 +429,12 @@ void dispose() {
                               ],
                             ),
                             Text(
-                              "${logements[index].typeProperty}- ${logements[index].titre}",
+                              "${filteredLogements[index].typeProperty}- ${filteredLogements[index].titre}",
                               style: TextStyle(fontSize: 12),
                             ),
                             Text(
-                              getFirstTwoWords(logements[index].adresse),
+                              getFirstTwoWords(
+                                  filteredLogements[index].adresse),
                               style: TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.bold),
                               maxLines: 1,
@@ -424,7 +450,7 @@ void dispose() {
                                   width: largeurEcran * 0.01,
                                 ),
                                 Text(
-                                  logements[index].chambres.toString(),
+                                  filteredLogements[index].chambres.toString(),
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Color.fromRGBO(67, 58, 58, 0.475),
@@ -441,7 +467,7 @@ void dispose() {
                                   width: largeurEcran * 0.01,
                                 ),
                                 Text(
-                                  logements[index].surface.toString(),
+                                  "${filteredLogements[index].surface.toString()}m²",
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Color.fromRGBO(67, 58, 58, 0.475),
@@ -455,32 +481,19 @@ void dispose() {
                                   Icons.chair,
                                   color: Color.fromRGBO(28, 21, 21, 0.475),
                                 ),
-                                SizedBox(
-                                  width: largeurEcran * 0.01,
-                                ),
+                                SizedBox(width: largeurEcran * 0.01),
                                 Text(
-                                  'Meuble :',
+                                  'Meuble : ${filteredLogements[index].estMeuble != null ? (filteredLogements[index].estMeuble! ? "Oui" : "Non") : "Non spécifié"}',
                                   style: TextStyle(
                                       fontSize: 10, color: Colors.grey),
                                 ),
-                                SizedBox(
-                                  width: largeurEcran * 0.01,
-                                ),
-                                /*Text(
-                         bien['meuble'],
-                         style: TextStyle(
-                           fontWeight: FontWeight.bold,
-                           color: Color.fromRGBO(67, 58, 58, 0.475),
-                           fontSize: 10
-                         ),
-                       ),*/
                               ],
                             ),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  getFormattedPrice(logements[index]),
+                                  getFormattedPrice(filteredLogements[index]),
                                   style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -502,18 +515,28 @@ void dispose() {
 
   Widget carteProprieteConfier(BuildContext context) {
     final largeurEcran = MediaQuery.of(context).size.width;
-    if (logementsConfier.isEmpty) {
+    final filteredLogements = filterLogements(logementsConfier);
+    if (filteredLogements.isEmpty) {
       return Center(
-        child: Text("Aucun logement confier"),
+        child: Text(searchQuery.isEmpty
+            ? "Aucun logement confié"
+            : "Aucun résultat trouvé"),
       );
     }
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.75,
       child: ListView.builder(
-          itemCount: logementsConfier.length,
+          padding: EdgeInsets.only(bottom: 20),
+          itemCount: filteredLogements.length,
           itemBuilder: (context, index) {
             return GestureDetector(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => PageDetailsProprietaire(
+                            logement: filteredLogements[index])));
+              },
               child: Card(
                 elevation: 8,
                 child: SizedBox(
@@ -524,9 +547,9 @@ void dispose() {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: logementsConfier[index].photo1.isNotEmpty
+                        child: filteredLogements[index].photo1.isNotEmpty
                             ? Image.memory(
-                                base64Decode(logementsConfier[index].photo1),
+                                base64Decode(filteredLogements[index].photo1),
                                 width: MediaQuery.of(context).size.width * 0.3,
                                 height: 150,
                                 fit: BoxFit.cover,
@@ -573,11 +596,12 @@ void dispose() {
                               ],
                             ),
                             Text(
-                              "${logementsConfier[index].typeProperty}- ${logementsConfier[index].titre}",
+                              "${filteredLogements[index].typeProperty}- ${filteredLogements[index].titre}",
                               style: TextStyle(fontSize: 12),
                             ),
                             Text(
-                              getFirstTwoWords(logementsConfier[index].adresse),
+                              getFirstTwoWords(
+                                  filteredLogements[index].adresse),
                               style: TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.bold),
                               maxLines: 1,
@@ -593,7 +617,7 @@ void dispose() {
                                   width: largeurEcran * 0.01,
                                 ),
                                 Text(
-                                  logementsConfier[index].chambres.toString(),
+                                  filteredLogements[index].chambres.toString(),
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Color.fromRGBO(67, 58, 58, 0.475),
@@ -610,7 +634,7 @@ void dispose() {
                                   width: largeurEcran * 0.01,
                                 ),
                                 Text(
-                                  logementsConfier[index].surface.toString(),
+                                  "${filteredLogements[index].surface.toString()}m²",
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Color.fromRGBO(67, 58, 58, 0.475),
@@ -626,7 +650,7 @@ void dispose() {
                                 ),
                                 SizedBox(width: largeurEcran * 0.01),
                                 Text(
-                                  'Meuble : ${logementsConfier[index].estMeuble != null ? (logementsConfier[index].estMeuble! ? "Oui" : "Non") : "Non spécifié"}',
+                                  'Meuble : ${filteredLogements[index].estMeuble != null ? (filteredLogements[index].estMeuble! ? "Oui" : "Non") : "Non spécifié"}',
                                   style: TextStyle(
                                       fontSize: 10, color: Colors.grey),
                                 ),
@@ -636,7 +660,7 @@ void dispose() {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  getFormattedPrice(logementsConfier[index]),
+                                  getFormattedPrice(filteredLogements[index]),
                                   style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -645,7 +669,7 @@ void dispose() {
                               ],
                             ),
                             Text(
-                              logementsConfier[index].gestionnaireNom ??
+                              filteredLogements[index].gestionnaireNom ??
                                   "gerer par vous meme",
                               style: TextStyle(fontSize: 13),
                             )
@@ -678,8 +702,9 @@ void dispose() {
 
     print("Chargement des logements confier...");
 
-   _logementConfierSubscription= FirestoreService().getLogementForWithGestionnaire(currentUser.uid).listen(
-        (snapshot) async {
+    _logementConfierSubscription = FirestoreService()
+        .getLogementForWithGestionnaire(currentUser.uid)
+        .listen((snapshot) async {
       print("Données reçues: ${snapshot.docs.length} logements");
       List<Logement> listeLogement = [];
       List<Future<void>> creneauxFutures = [];
@@ -825,10 +850,8 @@ void dispose() {
           print("Logements Confier chargés: ${logementsConfier.length}");
         });
       }
-    },
-    onError: (error) {
+    }, onError: (error) {
       print("Erreur lors du chargement des logements: $error");
-    }
-  );
-}
+    });
+  }
 }
