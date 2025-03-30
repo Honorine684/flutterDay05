@@ -8,16 +8,16 @@ import 'package:houeto/JsonModels/Logement.dart';
 import 'package:houeto/Pages/NotificationsPage.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
 
-class PageAccueil extends StatefulWidget {
-  const PageAccueil({super.key});
+class PageGestion extends StatefulWidget {
+  const PageGestion({super.key});
 
   @override
-  State<PageAccueil> createState() {
-    return PageAccueilState();
+  State<PageGestion> createState() {
+    return PageGestionState();
   }
 }
 
-class PageAccueilState extends State<PageAccueil> {
+class PageGestionState extends State<PageGestion> {
     StreamSubscription? _logementSubscription;
   StreamSubscription? _logementConfierSubscription;
   @override

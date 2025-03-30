@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
 import 'package:houeto/Pages/NotificationsPage.dart';
+import 'package:houeto/Pages/PageDemandeLocation.dart';
+import 'package:houeto/Pages/ShowBien.dart';
+import 'package:houeto/Pages/pageVisite.dart';
 import 'package:houeto/Services/Firebase/auth.dart';
 
 class ProprioDashboard extends StatefulWidget {
@@ -73,6 +76,32 @@ class _ProprioDashboardState extends State<ProprioDashboard> {
         'title': 'Ajouter un logement',
         'color': Colors.blue,
         'onTap': () => Navigator.push(context, MaterialPageRoute(builder: (context) => const Addlogement())),
+      },
+      {
+        'icon': Icons.manage_history,
+        'title': 'Gérer',
+        'color': Colors.pink,
+        'onTap': () {
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> const Showbien()));
+        },
+      },
+      {
+        'icon': Icons.calendar_today,
+        'title': 'Demandes visite',
+        'color': Colors.green,
+        'onTap': () {
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> const PageVisites()));
+
+        },
+      },
+      {
+        'icon': Icons.rectangle_outlined,
+        'title': 'Demandes location',
+        'color': Colors.blue,
+        'onTap': () {
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> const Pagedemandelocation()));
+
+        },
       },
       {
         'icon': Icons.assignment,
