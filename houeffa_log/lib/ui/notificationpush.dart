@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key, String? title, required logementId, String? body});
+  const NotificationsScreen({super.key, String? body, String? title, required logementId});
 
   @override
   _NotificationsScreenState createState() => _NotificationsScreenState();

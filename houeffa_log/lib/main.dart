@@ -17,16 +17,35 @@ import 'screens/services_screen.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
+// Gestion des notifications en arrière-plan
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print("Notification en arrière-plan : ${message.notification?.title}");
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    print("Notification en arrière-plan : ${message.notification?.title}");
+  } catch (e) {
+    print("Erreur dans le handler en arrière-plan : $e");
+  }
 }
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    print("Erreur lors de l’initialisation de Firebase : $e");
+  }
+
+
+  const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
+  const InitializationSettings initSettings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit,
   );
+  await flutterLocalNotificationsPlugin.initialize(initSettings);
+
   runApp(const MyApp());
 }
 
@@ -35,14 +54,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("Construction de MyApp");
     return MaterialApp(
       title: 'Houeffa',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        useMaterial3: true, 
+        useMaterial3: true,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       initialRoute: '/',
@@ -69,15 +87,13 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("Affichage de SplashScreen");
     Future.delayed(const Duration(seconds: 3), () {
-      print("Redirection vers /wrapper");
       Navigator.pushReplacementNamed(context, '/wrapper');
     });
 
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: Colors.orange,
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -108,29 +124,26 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const HomeScreen(),
-    const ExploreScreen(),
-    const GestionLocativeScreen(userId: ''),
-    const ServicesScreen(logementId: ''),
-    const ProfilePage(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      print("Index sélectionné : $_selectedIndex");
-    });
-  }
+  late List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    print("Initialisation de MainScreen");
 
-   
+    
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid ?? '';
+
+    _pages = [
+      const HomeScreen(),
+      const ExploreScreen(),
+      GestionLocativeScreen(userId: userId), 
+      ServicesScreen(logementId: userId), 
+      const ProfilePage(),
+    ];
+
+    
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("Notification en avant-plan : ${message.notification?.title}");
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'high_importance_channel',
         'High Importance Notifications',
@@ -153,7 +166,7 @@ class _MainScreenState extends State<MainScreen> {
         message.notification?.title ?? "Notification",
         message.notification?.body ?? "Nouveau message reçu",
         platformDetails,
-        payload: message.data['tripId'],
+        payload: message.data['visiteId'], 
       );
     });
 
@@ -170,7 +183,6 @@ class _MainScreenState extends State<MainScreen> {
       );
     });
 
-    
     FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         print("App ouverte par une notification : ${message.data}");
@@ -187,9 +199,14 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    print("Construction de MainScreen");
     return Scaffold(
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
