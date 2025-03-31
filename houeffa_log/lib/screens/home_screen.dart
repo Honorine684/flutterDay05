@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:houeffa_log/screens/logementDetailsPage.dart';
-import 'package:houeffa_log/ui/notificationpush.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,23 +45,7 @@ class _HomePageState extends State<HomeScreen> {
     return logements.where((logement) => logement['propertyType'] == selectedType).toList();
   }
 
-  // Fonction pour récupérer une notification de visite acceptée (exemple)
-  Future<String?> _fetchAcceptedVisiteNotificationId() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('visiteNotification')
-          .where('statut', isEqualTo: 'Acceptée') 
-          .limit(1) 
-          .get();
-      if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.first.id; 
-      }
-      return null;
-    } catch (e) {
-      print('Erreur lors de la récupération des notifications : $e');
-      return null;
-    }
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -72,24 +56,7 @@ class _HomePageState extends State<HomeScreen> {
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.orange,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.white),
-            onPressed: () async {
-              
-              final visiteId = await _fetchAcceptedVisiteNotificationId();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => NotificationPage(
-                    visiteId: visiteId,
-                  ),
-                ),
-              );
-            },
-            tooltip: 'Notifications',
-          ),
-        ],
+        
       ),
       body: isLoading
           ? const Center(
