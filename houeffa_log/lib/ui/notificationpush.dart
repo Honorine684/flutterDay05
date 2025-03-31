@@ -1,32 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:houeffa_log/screens/logementDetailsPage.dart'; 
-import 'package:cloud_firestore/cloud_firestore.dart'; 
-class NotificationPage extends StatefulWidget {
-  final String? title;
-  final String? body;
-  final String? logementId;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
-  const NotificationPage({
-    super.key,
-    this.title,
-    this.body,
-    this.logementId,
-  });
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key, String? title, required logementId, String? body});
 
   @override
-  State<NotificationPage> createState() => _NotificationPageState();
+  _NotificationsScreenState createState() => _NotificationsScreenState();
 }
 
-class _NotificationPageState extends State<NotificationPage> {
-  Future<DocumentSnapshot?> _fetchLogementDetails(String logementId) async {
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  List<DocumentSnapshot> notifications = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchNotifications();
+  }
+
+  Future<void> fetchNotifications() async {
     try {
-      return await FirebaseFirestore.instance
-          .collection('logement')
-          .doc(logementId)
+      final snapshot = await FirebaseFirestore.instance
+          .collection('visiteNotification')
+          .orderBy('timestamp', descending: true)
           .get();
+      setState(() {
+        notifications = snapshot.docs;
+        isLoading = false;
+      });
     } catch (e) {
-      print("Erreur lors de la récupération du logement : $e");
-      return null;
+      print('Erreur lors de la récupération des notifications : $e');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -35,135 +42,57 @@ class _NotificationPageState extends State<NotificationPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: Colors.deepOrangeAccent,
+        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
-        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.notifications_active,
-                            color: Colors.deepOrange, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.title ?? 'Nouvelle Notification',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                  color: Colors.blue.shade900,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : notifications.isEmpty
+              ? const Center(child: Text('Aucune notification disponible.'))
+              : ListView.builder(
+                  itemCount: notifications.length,
+                  itemBuilder: (context, index) {
+                    final notification = notifications[index].data() as Map<String, dynamic>;
+                    return Card(
+                      margin: const EdgeInsets.all(8.0),
+                      child: ListTile(
+                        leading: Icon(
+                          notification['isRead'] == false
+                              ? Icons.notifications_active
+                              : Icons.notifications,
+                          color: Colors.orange,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.body ?? 'Aucune information supplémentaire disponible.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey.shade800,
-                          ),
-                    ),
-                    if (widget.logementId != null) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(Icons.home, color: Colors.blue),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Logement ID : ${widget.logementId}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ],
+                        title: Text(
+                          notification['title'] ?? 'Notification',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(notification['body'] ?? 'Détails non disponibles'),
+                            const SizedBox(height: 5),
+                            Text(
+                              'Date : ${DateFormat('dd MMM yyyy à HH:mm').format((notification['timestamp'] as Timestamp).toDate())}',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.visibility),
+                          onPressed: () {
+                            FirebaseFirestore.instance
+                                .collection('visiteNotification')
+                                .doc(notifications[index].id)
+                                .update({'isRead': true});
+                            setState(() {
+                              notification['isRead'] = true;
+                            });
+                          },
+                        ),
                       ),
-                    ],
-                  ],
+                    );
+                  },
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Center(
-              child: Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: widget.logementId != null
-                        ? () async {
-                            
-                            final logementDoc =
-                                await _fetchLogementDetails(widget.logementId!);
-                            if (logementDoc != null && logementDoc.exists) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LogementDetailsPage(
-                                      logement: logementDoc),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Logement introuvable ou erreur de chargement')),
-                              );
-                            }
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Voir les détails'),
-                  ),
-                  if (widget.logementId == null) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Aucune action disponible pour cette notification.',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context); 
-                    },
-                    child: const Text(
-                      'Fermer',
-                      style: TextStyle(color: Colors.deepOrange),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

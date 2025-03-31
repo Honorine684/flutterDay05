@@ -61,7 +61,7 @@ class _HomePageState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const NotificationPage(
+                  builder: (context) => const NotificationsScreen(
                     title: "Notifications",
                     body: "Consultez vos dernières notifications ici.",
                     logementId: null, 

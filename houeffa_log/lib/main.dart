@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
           }
           return VerificationScreen(user: user);
         },
-        '/notification': (context) => const NotificationPage(),
+        '/notification': (context) => const NotificationsScreen(logementId: null,),
       },
     );
   }
@@ -161,7 +161,7 @@ class _MainScreenState extends State<MainScreen> {
       print("Notification ouverte : ${message.data}");
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-          builder: (context) => NotificationPage(
+          builder: (context) => NotificationsScreen(
             title: message.notification?.title,
             body: message.notification?.body,
             logementId: message.data['tripId'],
@@ -176,7 +176,7 @@ class _MainScreenState extends State<MainScreen> {
         print("App ouverte par une notification : ${message.data}");
         navigatorKey.currentState?.push(
           MaterialPageRoute(
-            builder: (context) => NotificationPage(
+            builder: (context) => NotificationsScreen(
               title: message.notification?.title,
               body: message.notification?.body,
               logementId: message.data['tripId'],
@@ -197,8 +197,8 @@ class _MainScreenState extends State<MainScreen> {
           opacity: animation,
           child: child,
         ),
-        child: _pages[_selectedIndex],
         key: ValueKey<int>(_selectedIndex),
+        child: _pages[_selectedIndex],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
