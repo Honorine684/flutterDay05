@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:houeffa_log/screens/logementDetailsPage.dart';
-import 'package:houeffa_log/ui/notificationpush.dart'; 
+import 'package:houeffa_log/ui/notificationpush.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,8 +24,7 @@ class _HomePageState extends State<HomeScreen> {
 
   Future<void> fetchData() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('logement').get();
+      final snapshot = await FirebaseFirestore.instance.collection('logement').get();
       setState(() {
         logements = snapshot.docs;
         isLoading = false;
@@ -35,14 +34,33 @@ class _HomePageState extends State<HomeScreen> {
       setState(() {
         isLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur de chargement des logements : $e')),
+      );
     }
   }
 
   List<DocumentSnapshot> getFilteredLogements() {
     if (selectedType == 'Tous') return logements;
-    return logements
-        .where((logement) => logement['propertyType'] == selectedType)
-        .toList();
+    return logements.where((logement) => logement['propertyType'] == selectedType).toList();
+  }
+
+  // Fonction pour récupérer une notification de visite acceptée (exemple)
+  Future<String?> _fetchAcceptedVisiteNotificationId() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('visiteNotification')
+          .where('statut', isEqualTo: 'Acceptée') 
+          .limit(1) 
+          .get();
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.first.id; 
+      }
+      return null;
+    } catch (e) {
+      print('Erreur lors de la récupération des notifications : $e');
+      return null;
+    }
   }
 
   @override
@@ -57,19 +75,19 @@ class _HomePageState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications, color: Colors.white),
-            onPressed: () {
+            onPressed: () async {
+              
+              final visiteId = await _fetchAcceptedVisiteNotificationId();
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const NotificationPage(
-                    title: "Notifications",
-                    body: "Consultez vos dernières notifications ici.",
-                    logementId: null, 
+                  builder: (context) => NotificationPage(
+                    visiteId: visiteId,
                   ),
                 ),
               );
             },
-            tooltip: 'Notifications', 
+            tooltip: 'Notifications',
           ),
         ],
       ),
@@ -80,8 +98,10 @@ class _HomePageState extends State<HomeScreen> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 10),
-                  Text('Chargement des données...',
-                      style: TextStyle(color: Colors.orange))
+                  Text(
+                    'Chargement des données...',
+                    style: TextStyle(color: Colors.orange),
+                  ),
                 ],
               ),
             )
@@ -136,6 +156,12 @@ class _HomePageState extends State<HomeScreen> {
                                       width: double.infinity,
                                       height: 150,
                                       fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => Container(
+                                        width: double.infinity,
+                                        height: 150,
+                                        color: Colors.grey[300],
+                                        child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                                      ),
                                     )
                                   : Container(
                                       width: double.infinity,
@@ -162,9 +188,7 @@ class _HomePageState extends State<HomeScreen> {
                                     style: TextStyle(color: Colors.black.withOpacity(0.6)),
                                   ),
                                   Text(
-                                    '${(logement['description'] ?? 'Aucune description').length > 60 
-                                        ? logement['description'].substring(0, 60) 
-                                        : logement['description']}...',
+                                    '${(logement['description'] ?? 'Aucune description').length > 60 ? logement['description'].substring(0, 60) : logement['description']}...',
                                     style: TextStyle(color: Colors.black.withOpacity(0.6)),
                                   ),
                                   const SizedBox(height: 8),
@@ -175,21 +199,21 @@ class _HomePageState extends State<HomeScreen> {
                                         children: [
                                           const Icon(Icons.bed, color: Colors.orange),
                                           const SizedBox(width: 4),
-                                          Text('${logement['chambres'] ?? 0} ch.')
+                                          Text('${logement['chambres'] ?? 0} ch.'),
                                         ],
                                       ),
                                       Row(
                                         children: [
                                           const Icon(Icons.square_foot, color: Colors.orange),
                                           const SizedBox(width: 4),
-                                          Text('${logement['surface'] ?? 'N/D'} m²')
+                                          Text('${logement['surface'] ?? 'N/D'} m²'),
                                         ],
                                       ),
                                       Row(
                                         children: [
                                           const Icon(Icons.info, color: Colors.orange),
                                           const SizedBox(width: 4),
-                                          Text(logement['statut'] ?? 'N/D')
+                                          Text(logement['statut'] ?? 'N/D'),
                                         ],
                                       ),
                                     ],

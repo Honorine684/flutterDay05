@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:houeffa_log/screens/logementDetailsPage.dart'; 
-import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+
 class NotificationPage extends StatefulWidget {
-  final String? title;
-  final String? body;
-  final String? logementId;
+  final String? visiteId; 
 
   const NotificationPage({
     super.key,
-    this.title,
-    this.body,
-    this.logementId,
+    this.visiteId, 
   });
 
   @override
@@ -18,14 +15,14 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  Future<DocumentSnapshot?> _fetchLogementDetails(String logementId) async {
+  Future<DocumentSnapshot?> _fetchVisiteNotification(String visiteId) async { 
     try {
       return await FirebaseFirestore.instance
-          .collection('logement')
-          .doc(logementId)
+          .collection('visiteNotification')
+          .doc(visiteId) 
           .get();
     } catch (e) {
-      print("Erreur lors de la récupération du logement : $e");
+      print("Erreur lors de la récupération de la notification : $e");
       return null;
     }
   }
@@ -41,128 +38,184 @@ class _NotificationPageState extends State<NotificationPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+        child: widget.visiteId == null 
+            ? const Center(
+                child: Text(
+                  'Aucune notification sélectionnée.',
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+              )
+            : FutureBuilder<DocumentSnapshot?>(
+                future: _fetchVisiteNotification(widget.visiteId!), 
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError || !snapshot.hasData || snapshot.data == null || !snapshot.data!.exists) {
+                    return const Center(
+                      child: Text(
+                        'Notification introuvable ou erreur de chargement.',
+                        style: TextStyle(color: Colors.red, fontSize: 16),
+                      ),
+                    );
+                  }
+
+                  
+                  final visiteNotification = snapshot.data!;
+                  final String title = visiteNotification['title'] ?? 'Nouvelle Notification';
+                  final String body = visiteNotification['body'] ?? 'Aucune information supplémentaire.';
+                  final bool isRead = visiteNotification['isRead'] ?? false;
+                  final String receiverId = visiteNotification['receiverId'] ?? 'Inconnu';
+                  final String senderId = visiteNotification['senderId'] ?? 'Inconnu';
+                  final Timestamp? timestamp = visiteNotification['timestamp'];
+                  final String visiteId = visiteNotification['visiteId'] ?? 'Non spécifié';
+
+                  
+                  String formattedDate = timestamp != null
+                      ? DateFormat('dd MMMM yyyy à HH:mm:ss').format(timestamp.toDate())
+                      : 'Date non disponible';
+
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.notifications_active,
-                            color: Colors.deepOrange, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.title ?? 'Nouvelle Notification',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                  color: Colors.blue.shade900,
-                                  fontWeight: FontWeight.bold,
+                        Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.notifications_active,
+                                        color: Colors.deepOrange, size: 28),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        title,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall
+                                            ?.copyWith(
+                                              color: Colors.blue.shade900,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  body,
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        color: Colors.grey.shade800,
+                                      ),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today, color: Colors.blue),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Visite ID : $visiteId',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Colors.blue,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.date_range, color: Colors.blue),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Date : $formattedDate',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(color: Colors.blue),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      isRead ? Icons.mark_email_read : Icons.mark_email_unread,
+                                      color: isRead ? Colors.green : Colors.red,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Statut : ${isRead ? "Lue" : "Non lue"}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(color: isRead ? Colors.green : Colors.red),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person, color: Colors.blue),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Envoyé par : $senderId',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(color: Colors.blue),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person_outline, color: Colors.blue),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Destinataire : $receiverId',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(color: Colors.blue),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Center(
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text(
+                              'Fermer',
+                              style: TextStyle(color: Colors.deepOrange),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.body ?? 'Aucune information supplémentaire disponible.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey.shade800,
-                          ),
-                    ),
-                    if (widget.logementId != null) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(Icons.home, color: Colors.blue),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Logement ID : ${widget.logementId}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
+                  );
+                },
               ),
-            ),
-            const SizedBox(height: 24),
-            Center(
-              child: Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: widget.logementId != null
-                        ? () async {
-                            
-                            final logementDoc =
-                                await _fetchLogementDetails(widget.logementId!);
-                            if (logementDoc != null && logementDoc.exists) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LogementDetailsPage(
-                                      logement: logementDoc),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Logement introuvable ou erreur de chargement')),
-                              );
-                            }
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Voir les détails'),
-                  ),
-                  if (widget.logementId == null) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Aucune action disponible pour cette notification.',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context); 
-                    },
-                    child: const Text(
-                      'Fermer',
-                      style: TextStyle(color: Colors.deepOrange),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
