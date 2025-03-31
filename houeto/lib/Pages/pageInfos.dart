@@ -33,6 +33,8 @@ class _PageInfosState extends State<PageInfos> {
 }
 
 class UserInfoForm extends StatefulWidget {
+  const UserInfoForm({super.key});
+
   @override
   _UserInfoFormState createState() => _UserInfoFormState();
 }

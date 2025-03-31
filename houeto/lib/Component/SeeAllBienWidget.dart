@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
+import 'package:houeto/Pages/PageDetails.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:houeto/JsonModels/Logement.dart';
 import 'package:houeto/Services/Firebase/FirestoreService.dart';
@@ -16,11 +20,19 @@ class SeeallbienwidgetMap extends StatefulWidget {
 
 class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
   List<Logement> logements = [];
+  bool isLoading = true;
 
   final mapController = MapController();
   double latitude = 6.3676953;
   double longitude = 2.4252507;
   double zoomLevel = 15.0;
+  
+  // Limites pour le calcul du cadrage de la carte
+  double minLat = 90.0;
+  double maxLat = -90.0;
+  double minLng = 180.0;
+  double maxLng = -180.0;
+  
   String getFormattedPrice(Logement logement) {
     final hasMonthly = (logement.loyerMois) > 0;
     final hasDaily = (logement.loyerJour) > 0;
@@ -52,36 +64,60 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
       return;
     }
 
-    latitude = logements.map((l) => l.latitude).reduce((a, b) => a + b) /
-        logements.length;
-    longitude = logements.map((l) => l.longitude).reduce((a, b) => a + b) /
-        logements.length;
+    // Réinitialiser les limites
+    minLat = 90.0;
+    maxLat = -90.0;
+    minLng = 180.0;
+    maxLng = -180.0;
 
-    double maxDistance = 0;
-    for (var i = 0; i < logements.length; i++) {
-      for (var j = i + 1; j < logements.length; j++) {
-        double distance = calculateDistance(
-            logements[i].latitude,
-            logements[i].longitude,
-            logements[j].latitude,
-            logements[j].longitude);
-        maxDistance = max(maxDistance, distance);
-      }
+    // Calculer les limites de tous les logements
+    for (var logement in logements) {
+      if (logement.latitude < minLat) minLat = logement.latitude;
+      if (logement.latitude > maxLat) maxLat = logement.latitude;
+      if (logement.longitude < minLng) minLng = logement.longitude;
+      if (logement.longitude > maxLng) maxLng = logement.longitude;
     }
+    
+    // Calculer le centre de la carte
+    latitude = (minLat + maxLat) / 2;
+    longitude = (minLng + maxLng) / 2;
 
-    if (maxDistance <= 0.5) {
+    // Ajouter une marge pour s'assurer que tous les marqueurs sont visibles
+    double latPadding = (maxLat - minLat) * 0.1;
+    double lngPadding = (maxLng - minLng) * 0.1;
+    
+    // Recalculer les limites avec la marge
+    minLat -= latPadding;
+    maxLat += latPadding;
+    minLng -= lngPadding;
+    maxLng += lngPadding;
+    
+    // Calculer la distance maximale en degrés
+    double latDist = maxLat - minLat;
+    double lngDist = maxLng - minLng;
+    
+    // Calculer le niveau de zoom approprié
+    if (max(latDist, lngDist) < 0.01) {
       zoomLevel = 16.0;
-    } else if (maxDistance <= 1) {
-      zoomLevel = 15.0;
-    } else if (maxDistance <= 2) {
+    } else if (max(latDist, lngDist) < 0.05) {
       zoomLevel = 14.0;
-    } else {
+    } else if (max(latDist, lngDist) < 0.1) {
       zoomLevel = 13.0;
+    } else if (max(latDist, lngDist) < 0.5) {
+      zoomLevel = 11.0;
+    } else {
+      zoomLevel = 10.0;
     }
-
+    
+    print('Limites de la carte: Lat($minLat, $maxLat), Lng($minLng, $maxLng)');
     print('Centre calculé: $latitude, $longitude');
     print('Zoom calculé: $zoomLevel');
-    print('Distance maximale entre logements: $maxDistance km');
+  }
+
+  // Centrer la carte pour montrer tous les logements
+  void centerMapOnAllProperties() {
+    calculateMapCenter();
+    mapController.move(LatLng(latitude, longitude), zoomLevel);
   }
 
   double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -106,6 +142,7 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
   }
 
   double max(double a, double b) => a > b ? a : b;
+  
   @override
   void initState() {
     super.initState();
@@ -113,6 +150,10 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
   }
 
   void loadLogement() {
+    setState(() {
+      isLoading = true;
+    });
+    
     User? currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
@@ -120,6 +161,7 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
       if (mounted) {
         setState(() {
           logements = [];
+          isLoading = false;
         });
       }
       return;
@@ -272,111 +314,249 @@ class SeeallbienwidgetMapState extends State<SeeallbienwidgetMap> {
         }
       }
 
-      // Wait for all creneaux to be loaded
       await Future.wait(creneauxFutures);
 
-      setState(() {
-        logements = listeLogement;
-        print("Logements chargés: ${logements.length}");
-      });
+      if (mounted) {
+        setState(() {
+          logements = listeLogement;
+          isLoading = false;
+          calculateMapCenter(); // Recalcule le centre après chargement des logements
+          
+          // Centrer automatiquement la carte après chargement
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            centerMapOnAllProperties();
+          });
+          
+          print("Logements chargés: ${logements.length}");
+        });
+      }
     }, onError: (error) {
       print("Erreur lors du chargement des logements: $error");
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    print("Nombre total de logements: ${logements.length}");
-
-    List<Marker> markers = [];
-    for (var logement in logements) {
-      markers.add(
-        Marker(
-          point: LatLng(logement.latitude, logement.longitude),
-          width: 120,
-          height: 80,
-          child: buildCustomMarker(logement),
-        ),
-      );
-    }
-
-    print("Nombre de marqueurs créés: ${markers.length}");
-
-    return Center(
+  Widget buildCustomMarker(Logement logement) {
+    return GestureDetector(
       child: SizedBox(
-        width: MediaQuery.of(context).size.width,
-        height: 500,
-        child: FlutterMap(
-          mapController: mapController,
-          options: MapOptions(
-            initialCenter: LatLng(latitude, longitude),
-            initialZoom: zoomLevel,
+        width: 140, 
+        height: 55, 
+        child: Card(
+          elevation: 6,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+            side: BorderSide(color: Theme.of(context).primaryColor, width: 1.5),
           ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  logement.typeProperty,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  getFormattedPrice(logement),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: Colors.black,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            MarkerLayer(
-              markers: markers,
-            ),
-          ],
+          ),
         ),
       ),
+      onTap: () => _showLogementDetails(context, logement),
     );
   }
 
-  void _showLogementDetails(BuildContext context, Logement logement) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(logement.titre),
-        content: Column(
+ void _showLogementDetails(BuildContext context, Logement logement) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(logement.titre),
+      content: SingleChildScrollView(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (logement.photo1.isNotEmpty)
+              Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: DecorationImage(
+                    image: _getImageProvider(logement.photo1),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            SizedBox(height: 10),
             Text("Adresse: ${logement.adresse}"),
             Text("Type: ${logement.typeProperty}"),
             Text("Superficie: ${logement.surface} m²"),
             Text("Loyer/jour: ${logement.loyerJour} FCFA"),
             Text("Loyer/mois: ${logement.loyerMois} FCFA"),
             Text("Chambres: ${logement.chambres}"),
+            if (logement.description.isNotEmpty) 
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text("Description: ${logement.description}"),
+              ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Fermer"),
-          ),
-        ],
       ),
-    );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Fermer"),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context)=> PageDetailsProprietaire(logement: logement)));
+          },
+          child: const Text("Voir plus"),
+        ),
+      ],
+    ),
+  );
+}
+ImageProvider _getImageProvider(String imageData) {
+  if (imageData.startsWith('http')) {
+    return NetworkImage(imageData);
+  } else {
+    try {
+ 
+      String base64String = imageData;
+      if (base64String.contains(',')) {
+        base64String = base64String.split(',')[1];
+      }
+      
+      final bytes = base64Decode(base64String);
+      return MemoryImage(bytes);
+    } catch (e) {
+      print('Erreur de décodage de l\'image: $e');
+      return AssetImage('assets/images/placeholder.png');
+    
+    }
   }
-
-  Widget buildCustomMarker(Logement logement) {
-    return GestureDetector(
-      child: SizedBox(
-          width: 63,
-          height: 15,
-          child: Card(
-              elevation: 6,
-              color: Colors.white,
-              child: Column(
-                children: [
-                  Text(
-                    logement.typeProperty,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+}
+  @override
+  Widget build(BuildContext context) {
+    print("Nombre total de logements: ${logements.length}");
+    
+    return Stack(
+      children: [
+        Center(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: 500,
+            child: FlutterMap(
+              mapController: mapController,
+              options: MapOptions(
+                initialCenter: LatLng(latitude, longitude),
+                initialZoom: zoomLevel,
+                onMapReady: () {
+                  mapController.move(LatLng(latitude, longitude), zoomLevel);
+                },
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.houeto',
+                ),
+                MarkerClusterLayerWidget(
+                  options: MarkerClusterLayerOptions(
+                    maxClusterRadius: 100,
+                    size: const Size(60, 60), // Taille des clusters
+                    markers: logements.map((logement) {
+                      return Marker(
+                        point: LatLng(logement.latitude, logement.longitude),
+                        width: 140,
+                        height: 70,
+                        child: buildCustomMarker(logement),
+                      );
+                    }).toList(),
+                    builder: (context, markers) {
+                      return Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 5.0,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          markers.length.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
+                    polygonOptions: const PolygonOptions(
+                      borderColor: Colors.blueAccent,
+                      color: Colors.black12,
+                      borderStrokeWidth: 3,
+                    ),
                   ),
-                  Text(
-                    getFormattedPrice(logement),
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                        color: Colors.black),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ))),
-      onTap: () => _showLogementDetails(context, logement),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Bouton pour centrer la carte sur tous les logements
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: FloatingActionButton(
+            heroTag: "centerMapBtn",
+            onPressed: centerMapOnAllProperties,
+            tooltip: "Voir tous les logements",
+            child: Icon(Icons.center_focus_strong),
+          ),
+        ),
+        // Afficher un indicateur de chargement
+        if (isLoading)
+          Container(
+            width: MediaQuery.of(context).size.width,
+            height: 500, 
+            color: Colors.black12,
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        if (!isLoading && logements.isEmpty)
+          SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: 500,
+            child: Center(
+              child: Text(
+                "Aucun logement disponible",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
