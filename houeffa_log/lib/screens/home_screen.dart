@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:houeffa_log/screens/logementDetailsPage.dart';
+import 'package:houeffa_log/ui/notificationpage.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -45,7 +46,6 @@ class _HomePageState extends State<HomeScreen> {
     return logements.where((logement) => logement['propertyType'] == selectedType).toList();
   }
 
-  
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +56,25 @@ class _HomePageState extends State<HomeScreen> {
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.orange,
-        
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications, color: Colors.white),
+            onPressed: () async {
+             
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(
+                    title: "Notifications",
+                    body: "Consultez vos dernières notifications ici.",
+                    logementId: null,
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Notifications',
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(

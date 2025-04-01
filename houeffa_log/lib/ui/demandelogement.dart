@@ -150,7 +150,7 @@ class _DemandeLogementState extends State<DemandeLogement> {
                 ),
                 const SizedBox(height: 16),
 
-                // Champ Téléphone
+                
                 TextFormField(
                   controller: _telephoneController,
                   decoration: const InputDecoration(
