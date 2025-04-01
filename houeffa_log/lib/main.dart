@@ -133,8 +133,8 @@ class _MainScreenState extends State<MainScreen> {
           opacity: animation,
           child: child,
         ),
-        child: _pages[_selectedIndex],
         key: ValueKey<int>(_selectedIndex),
+        child: _pages[_selectedIndex],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
