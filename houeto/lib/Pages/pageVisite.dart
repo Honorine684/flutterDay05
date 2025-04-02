@@ -392,11 +392,9 @@ else if (visite['statut'] == 'Confirmer') ...[
 
 Future<void> envoyerContrat(String visiteId, BuildContext context, String nomLocataire, String logementNom) async {
   try {
-    // 1. Initialisation
     final contratService = ContratService();
     final firestore = FirebaseFirestore.instance;
 
-    // 2. Récupération des données
     final visiteDoc = await firestore.collection('visite').doc(visiteId).get();
     if (!visiteDoc.exists) throw Exception("Visite introuvable");
     
@@ -408,7 +406,6 @@ Future<void> envoyerContrat(String visiteId, BuildContext context, String nomLoc
     if (!logementDoc.exists) throw Exception("Logement introuvable");
     final logementData = logementDoc.data() as Map<String, dynamic>;
 
-    // 3. Préparation du contrat
     final contratData = await contratService.preparerContrat(
       locataireId: locataireId,
       logementId: logementId,
@@ -417,34 +414,46 @@ Future<void> envoyerContrat(String visiteId, BuildContext context, String nomLoc
       visiteId: visiteId,
     );
 
-    // 4. Affichage du formulaire
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ContratForm(
         contratData: contratData,
         onSubmit: (dateDebut, duree, modePaiement) async {
-          // 5. Envoi du contrat
-          await contratService.envoyerContrat(
+          final contratId = await contratService.envoyerContrat(
             contratData: {
               ...contratData,
               'modePaiement': modePaiement,
             },
             dateDebut: dateDebut,
             duree: duree,
+            modePaiement: modePaiement,
           );
 
-          // 6. Notification
+          double totalToShow = 0.0;
+          final avance = (contratData['avance'] as num?)?.toDouble() ?? 0.0;
+          
+          if (modePaiement == 'Journalier') {
+            final loyerJour = contratData['loyerJour'] ?? 
+                           (contratData['detailsLogement']?['loyerJour'] as num?)?.toDouble() ?? 0.0;
+            totalToShow = avance + (loyerJour * (int.tryParse(duree) ?? 1));
+          } else {
+            final loyerMois = contratData['loyerMois'] ?? 
+                           (contratData['detailsLogement']?['loyerMois'] as num?)?.toDouble() ?? 0.0;
+            final typeBail = contratData['typeBail']?.toString() ?? 'Standard';
+            totalToShow = avance + (typeBail == 'Avancé' ? loyerMois * 6 : loyerMois);
+          }
+
           await NotificationServiceVisite().sendNotificationVisite(
             receiverId: locataireId,
             title: "Contrat de location prêt",
-            body: "Le contrat pour $logementNom est disponible. Montant Total: ${contratData['totalInitial'].toStringAsFixed(2)} fcfa",
+            body: "Le contrat pour $logementNom est disponible. Montant Total: ${totalToShow.toStringAsFixed(2)} FCFA",
             visiteId: visiteId,
+            contratId: contratId,
           );
         },
       ),
     );
 
-    // 7. Feedback
     if (confirmed == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:houeto/Pages/DashboardProprio.dart';
+import 'package:houeto/Pages/FiltreDemandeLocation.dart';
 import 'package:houeto/Pages/PageGestion.dart';
 import 'package:houeto/Pages/SeeAllBien.dart';
 import 'package:houeto/Pages/pageProfile.dart';
@@ -88,8 +89,8 @@ class _BottombarState extends State<Bottombar> {
                 offset: Offset(0, -25),
                 child: GestureDetector(
                   onTap: () {
-                    // Action pour le bouton central
-                    _navigateToPage(1); 
+                    Navigator.push(context, MaterialPageRoute(builder: (context)=>  DemandesLocationFiltre()));
+                    //_navigateToPage(1); 
                   },
                   child: Container(
                     height: 60,
@@ -110,7 +111,7 @@ class _BottombarState extends State<Bottombar> {
                       ],
                     ),
                     child: Icon(
-                      Icons.search,
+                      Icons.filter_list,
                       color: Colors.white,
                       size: 30,
                     ),

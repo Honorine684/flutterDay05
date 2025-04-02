@@ -11,68 +11,66 @@ class ContratService {
     String? visiteId,
     String? demandeLocationId,
   }) async {
-    // 1. Récupérer les données du locataire
     final locataireDoc = await _firestore.collection('users').doc(locataireId).get();
     final nomComplet = locataireDoc.exists 
         ? '${locataireDoc.get('prenom')} ${locataireDoc.get('nom')}'
         : 'Locataire inconnu';
-
-    // 2. Récupérer les données du logement
-    final logementDoc = await _firestore.collection('logement').doc(logementId).get();
-    if (!logementDoc.exists) throw Exception("Logement introuvable");
-
-    final logementData = logementDoc.data()!;
-    final modePaiement = logementData.containsKey('loyerMois') ? 'Mois' : 'Jour';
-    final loyer = modePaiement == 'Mois'
-    ? (logementData['loyerMois'] as num?)?.toDouble() ?? 0
-    : (logementData['loyerJour'] as num?)?.toDouble() ?? 0;
-    
+    final bool hasLoyerMois = logementData.containsKey('loyerMois') && logementData['loyerMois'] != null;
+    final bool hasLoyerJour = logementData.containsKey('loyerJour') && logementData['loyerJour'] != null;
+        final String modePaiementDefaut = hasLoyerMois ? 'Mensuel' : (hasLoyerJour ? 'Journalier' : 'Mensuel');
+        final double loyerMois = hasLoyerMois ? (logementData['loyerMois'] as num).toDouble() : 0.0;
+    final double loyerJour = hasLoyerJour ? (logementData['loyerJour'] as num).toDouble() : 0.0;
+        final double loyerDefaut = hasLoyerMois ? loyerMois : loyerJour;
+      
     final avance = (logementData['avance'] as num?)?.toDouble() ?? 0;
+    final caution = (logementData['caution'] as num?)?.toDouble() ?? 0;
+
     final typeBail = logementData['typeDeBail'] ?? 'Standard';
+    
 
     return {
-      // Informations de base
       'visiteId': visiteId,
       'locataireId': locataireId,
       'logementId': logementId,
       'nomDemandeur': nomComplet,
-      'typeDemande':typeDemande,
+      'typeDemande': typeDemande,
       'composition': getCompositionLogement(logementData),
       'conditionsSpeciales': getConditionsSpeciales(logementData),
-
-      
-      // Détails financiers
-      'loyer': loyer,
+            'loyer': loyerDefaut,
+      'loyerMois': hasLoyerMois ? loyerMois : null,
+      'loyerJour': hasLoyerJour ? loyerJour : null,
+      'modesDisponibles': {
+        'mensuel': hasLoyerMois,
+        'journalier': hasLoyerJour,
+      },
+      'modePaiement': modePaiementDefaut,
       'avance': avance,
+      'caution':caution,
       'typeBail': typeBail,
-      'modePaiement': modePaiement,
-      'totalInitial': _calculerTotalInitial(loyer, avance, typeBail),
+      'totalInitial': _calculerTotalInitial(loyerDefaut, avance, typeBail,caution),
       
-      // Détails du logement
       'detailsLogement': {
         'titre': logementData['titre'] ?? 'Sans titre',
         'adresse': logementData['adresse'] ?? 'Adresse non renseignée',
-        'loyerMois': (logementData['loyerMois'] as num?)?.toDouble(),
-        'loyerJour': (logementData['loyerJour'] as num?)?.toDouble(),
+        'loyerMois': hasLoyerMois ? loyerMois : null,
+        'loyerJour': hasLoyerJour ? loyerJour : null,
         'surface': logementData['surface']?.toString(),
       },
       
-      // Métadonnées
       'dateCreation': Timestamp.now(),
       'statut': 'En préparation',
     };
   }
 
-  double _calculerTotalInitial(double loyer, double avance, String typeBail) {
-    return avance + (typeBail == 'Avancé' ? loyer * 6 : loyer);
-  }
-    
-    List<String> getConditionsSpeciales(Map<String, dynamic> logementData) {
+  double _calculerTotalInitial(double loyer, double avance, String typeBail, double caution) {
+  return avance + caution + loyer; 
+}
+  List<String> getConditionsSpeciales(Map<String, dynamic> logementData) {
     final conditions = <String>[];
     if (logementData['estMeuble'] == true) conditions.add('✓ Logement meublé');
     if (logementData['estClimatise'] == true) conditions.add('✓ Climatisation');
-     return conditions;
-    }
+    return conditions;
+  }
 
   Map<String, String> getCompositionLogement(Map<String, dynamic> logementData) {
     return {
@@ -80,32 +78,68 @@ class ContratService {
       'sallesBain': '${logementData['salles_de_bain'] ?? 0}',
       'cuisines': '${logementData['cuisines'] ?? 0}',
       'salons': '${logementData['salons'] ?? 0}',
-      'parking': '${logementData['salons'] ?? 0}',
-
+      'parking': '${logementData['parking'] ?? 0}',
     };
   }
 
-Future<void> envoyerContrat({
+Future<String> envoyerContrat({
   required Map<String, dynamic> contratData,
   required String dateDebut,
   required String duree,
+  required String modePaiement,
 }) async {
-  final contratRef = _firestore.collection('contrats');
+  double totalCalcule;
+  final caution = (contratData['caution'] as num?)?.toDouble() ?? 0.0;
+
+  if (modePaiement == 'Journalier') {
+    final loyer = contratData['loyerJour'] ?? 0.0;
+    final jours = int.tryParse(duree) ?? 1;
+    totalCalcule = caution + (loyer * jours);
+  } else {
+    final avance = (contratData['avance'] as num?)?.toDouble() ?? 0.0;
+    final loyer = contratData['loyerMois'] ?? 0.0;
+    final typeBail = contratData['typeBail'] ?? 'Standard';
+    totalCalcule = avance + caution + (typeBail == 'Avancé' ? loyer * 6 : loyer);
+  }
+
+  final dateParts = dateDebut.split('/');
+  if (dateParts.length != 3) throw Exception("Format de date invalide (JJ/MM/AAAA attendu)");
+
+  final dateDebutTimestamp = Timestamp.fromDate(
+    DateTime(int.parse(dateParts[2]), int.parse(dateParts[1]), int.parse(dateParts[0]))
+  );
+
+  DateTime dateFinCalculee;
+  if (modePaiement == 'Journalier') {
+    final jours = int.tryParse(duree) ?? 1;
+    dateFinCalculee = DateTime(
+      int.parse(dateParts[2]), 
+      int.parse(dateParts[1]), 
+      int.parse(dateParts[0]) + jours
+    );
+  } else {
+    dateFinCalculee = DateTime(
+      int.parse(dateParts[2]), 
+      int.parse(dateParts[1]) + (int.tryParse(duree) ?? 12), 
+      int.parse(dateParts[0])
+    );
+  }
+
+  final contratRef = _firestore.collection('contrats').doc();
   
-  final modePaiement = contratData['modePaiement'];
-  final loyer = modePaiement == 'Mensuel' || modePaiement == 'Trimestriel' || modePaiement == 'Semestriel'
-    ? (contratData['detailsLogement']['loyerMois'] as num?)?.toDouble() ?? 0.0
-    : (contratData['detailsLogement']['loyerJour'] as num?)?.toDouble() ?? 0.0;
-  
-  await contratRef.add({
+  await contratRef.set({
     ...contratData,
-    'loyer': loyer, 
-    'dateDebut': dateDebut,
-    'duree': int.tryParse(duree) ?? 12,
+    'modePaiement': modePaiement,
+    'totalInitial': totalCalcule,
+    'dateDebut': dateDebutTimestamp,
+    'dateFin': Timestamp.fromDate(dateFinCalculee),
+    'duree': int.tryParse(duree) ?? (modePaiement == 'Journalier' ? 1 : 12),
+    'dureeType': modePaiement == 'Journalier' ? 'jours' : 'mois',
     'statut': 'Envoyé',
     'dateEnvoi': FieldValue.serverTimestamp(),
   });
 
+  if (contratData['visiteId'] != null) {
     await _firestore.collection('visite')
       .doc(contratData['visiteId'])
       .update({
@@ -113,4 +147,7 @@ Future<void> envoyerContrat({
         'contratId': contratRef.id,
       });
   }
+  
+  return contratRef.id;
+}
 }

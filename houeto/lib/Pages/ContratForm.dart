@@ -20,6 +20,7 @@ class _ContratFormState extends State<ContratForm> {
   late String _duree;
   late String _selectedTypePaiement;
   late bool _showDetailsCalcul;
+  late double _totalCalcule;
 
   @override
   void initState() {
@@ -28,34 +29,58 @@ class _ContratFormState extends State<ContratForm> {
     _duree = '12';
     _showDetailsCalcul = false;
     
-    // Gestion sécurisée de la valeur null
-    final modePaiementBase = widget.contratData['modePaiement']?.toString() ?? 'Mois';
-    _selectedTypePaiement = modePaiementBase == 'Mois' ? 'Mensuel' : 'Journalier';
+    final modesDisponibles = widget.contratData['modesDisponibles'] as Map<String, dynamic>? ?? 
+                           {'mensuel': true, 'journalier': true};
+    
+    if (modesDisponibles['mensuel'] == true) {
+      _selectedTypePaiement = 'Mensuel';
+    } else if (modesDisponibles['journalier'] == true) {
+      _selectedTypePaiement = 'Journalier';
+    } else {
+      _selectedTypePaiement = 'Mensuel'; 
+    }
+    
+    _totalCalcule = _calculerTotal();
   }
+double _calculerTotal() {
+  final caution = (widget.contratData['caution'] as num?)?.toDouble() ?? 0.0;
+  
+  if (_selectedTypePaiement == 'Journalier') {
+    final loyer = _getCurrentLoyer();
+    final jours = int.tryParse(_duree) ?? 1;
+    return caution + (loyer * jours); 
+  } else {
+    final avance = (widget.contratData['avance'] as num?)?.toDouble() ?? 0.0;
+    final typeBail = widget.contratData['typeBail'] ?? 'Standard';
+    return avance + caution + (typeBail == 'Avancé' ? _getCurrentLoyer() * 6 : _getCurrentLoyer());
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
-    // Valeurs par défaut sécurisées
-  double loyer = 0.0;
-  if (widget.contratData.containsKey('loyer') && widget.contratData['loyer'] != null) {
-    loyer = (widget.contratData['loyer'] as num).toDouble();
-  } else {
-    // Essayer de récupérer depuis detailsLogement en fonction du mode
-    final modePaiementBase = widget.contratData['modePaiement']?.toString() ?? 'Mois';
-    if (modePaiementBase == 'Mois' && 
-        widget.contratData['detailsLogement']?.containsKey('loyerMois') == true) {
-      loyer = (widget.contratData['detailsLogement']!['loyerMois'] as num).toDouble();
-    } else if (widget.contratData['detailsLogement']?.containsKey('loyerJour') == true) {
-      loyer = (widget.contratData['detailsLogement']!['loyerJour'] as num).toDouble();
-    }
-  }
+  
+    final typeBail = widget.contratData['typeBail']?.toString() ?? 'Standard';
+    final nomDemandeur = widget.contratData['nomDemandeur']?.toString() ?? 'Non spécifié';
+    final logementTitre = widget.contratData['detailsLogement']?['titre']?.toString() ?? 'Logement inconnu';
+    final modesDisponibles = widget.contratData['modesDisponibles'] as Map<String, dynamic>? ?? 
+                           {'mensuel': true, 'journalier': true};
 
-  final avance = (widget.contratData['avance'] as num?)?.toDouble() ?? 0.0;
-  final totalInitial = (widget.contratData['totalInitial'] as num?)?.toDouble() ?? 0.0;
-  final typeBail = widget.contratData['typeBail']?.toString() ?? 'Bail standard';
-  final modePaiementBase = widget.contratData['modePaiement']?.toString() ?? 'Mois';
-  final nomDemandeur = widget.contratData['nomDemandeur']?.toString() ?? 'Non spécifié';
-  final logementTitre = widget.contratData['detailsLogement']?['titre']?.toString() ?? 'LOgement inconnu';
+    List<String> modesPaiementOptions = [];
+    if (modesDisponibles['mensuel'] == true) {
+      modesPaiementOptions.addAll(['Mensuel', 'Trimestriel', 'Semestriel']);
+    }
+    if (modesDisponibles['journalier'] == true) {
+      modesPaiementOptions.add('Journalier');
+    }
+
+    if (modesPaiementOptions.isEmpty) {
+      modesPaiementOptions.add('Mensuel');
+    }
+
+    if (!modesPaiementOptions.contains(_selectedTypePaiement)) {
+      _selectedTypePaiement = modesPaiementOptions.first;
+    }
 
     return AlertDialog(
       title: const Text('Création du contrat', 
@@ -64,56 +89,67 @@ class _ContratFormState extends State<ContratForm> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section Informations de base
-            _buildInfoSection('Informations principales', [
-              _buildInfoRow('Logement:', logementTitre),
-              _buildInfoRow('Locataire:', nomDemandeur),
-            ]),
+         children: [
+  _buildInfoSection('Informations principales', [
+    _buildInfoRow('Logement:', logementTitre),
+    _buildInfoRow('Locataire:', nomDemandeur),
+  ]),
 
-            // Section Détails financiers
-          _buildInfoSection('Détails financiers', [
-  if (modePaiementBase == 'Mois' && widget.contratData['detailsLogement']?['loyerJour'] != null)
-    _buildInfoRow('Loyer/jour:', '${(widget.contratData['detailsLogement']!['loyerJour'] as num).toStringAsFixed(2)} FCFA'),
-  
-  if (modePaiementBase == 'Jour' && widget.contratData['detailsLogement']?['loyerMois'] != null)
-    _buildInfoRow('Loyer/mois:', '${(widget.contratData['detailsLogement']!['loyerMois'] as num).toStringAsFixed(2)} FCFA'),
-  
-  _buildInfoRow('Loyer:', '${loyer.toStringAsFixed(2)} FCFA/${modePaiementBase == 'Mois' ? 'mois' : 'jour'}'),
-  _buildInfoRow('Caution:', '${avance.toStringAsFixed(2)} FCFA'),
-  _buildInfoRow('Type de bail:', typeBail),
-  
-              
-              InkWell(
-                onTap: () => setState(() => _showDetailsCalcul = !_showDetailsCalcul),
-                child: Row(
-                  children: [
-                    const Text('Total initial:', style: TextStyle(fontWeight: FontWeight.bold,fontSize: 13)),
-                    Icon(_showDetailsCalcul ? Icons.expand_less : Icons.expand_more),
-                    Text('${totalInitial.toStringAsFixed(2)} FCFA', 
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  ],
-                ),
-              ),
-              
-           if (_showDetailsCalcul) ...[
+  _buildInfoSection('Détails financiers', [
+    buildFinancialDetails(widget.contratData),
+    
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.contratData['detailsLogement']?['loyerMois'] != null)
+          _buildInfoRow('Loyer mensuel:', '${(widget.contratData['detailsLogement']!['loyerMois'] as num).toStringAsFixed(2)} FCFA'),
+        
+        if (widget.contratData['detailsLogement']?['loyerJour'] != null)
+          _buildInfoRow('Loyer journalier:', '${(widget.contratData['detailsLogement']!['loyerJour'] as num).toStringAsFixed(2)} FCFA'),
+          
+        _buildInfoRow(
+          'Loyer appliqué:', 
+          '${_getCurrentLoyer().toStringAsFixed(2)} FCFA/${_selectedTypePaiement == 'Journalier' ? 'jour' : 'mois'}',
+          isBold: true
+        ),
+      ],
+    ),
+    
+    InkWell(
+      onTap: () => setState(() => _showDetailsCalcul = !_showDetailsCalcul),
+      child: Row(
+        children: [
+          const Text('Total à payer:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          Icon(_showDetailsCalcul ? Icons.expand_less : Icons.expand_more),
+          Text('${_totalCalcule.toStringAsFixed(2)} FCFA', 
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
+      ),
+    ),
+    
+if (_showDetailsCalcul) ...[
   const SizedBox(height: 8),
   const Text('Détail du calcul:', style: TextStyle(fontStyle: FontStyle.italic)),
   const SizedBox(height: 4),
-  Text('- Caution: ${avance.toStringAsFixed(2)} FCFA'),
-  Text('- ${typeBail == 'Avancé' ? '6 mois de loyer' : '1 mois de loyer'}: '
-      '${typeBail == 'Avancé' ? (loyer * 6).toStringAsFixed(2) : loyer.toStringAsFixed(2)} FCFA'),
-  Text('- Total: ${avance.toStringAsFixed(2)} + '
-      '${typeBail == 'Avancé' ? (loyer * 6).toStringAsFixed(2) : loyer.toStringAsFixed(2)} = '
-      '${totalInitial.toStringAsFixed(2)} FCFA'),
-],
-            ]),
 
-            const SizedBox(height: 16),
+  Text('- Caution: ${(widget.contratData['caution'] ?? 0).toStringAsFixed(0)} FCFA'),
 
-            // Section Paramètres du contrat
+  if (_selectedTypePaiement != 'Journalier')
+    Text('- Avance: ${(widget.contratData['avance'] ?? 0).toStringAsFixed(0)} FCFA'),
+
+  if (_selectedTypePaiement == 'Journalier')
+    Text('- $_duree jours à ${_getCurrentLoyer().toStringAsFixed(0)} FCFA/jour: '
+        '${(_getCurrentLoyer() * (int.tryParse(_duree) ?? 1)).toStringAsFixed(0)} FCFA'),
+]else
+    Text('- ${typeBail == 'Avancé' ? '6 mois' : '1 mois'} de loyer: '
+        '${(typeBail == 'Avancé' ? _getCurrentLoyer() * 6 : _getCurrentLoyer()).toStringAsFixed(0)} FCFA'),
+
+  Text('- Total: ${_totalCalcule.toStringAsFixed(0)} FCFA'),
+]),
+
+  const SizedBox(height: 16),
+
             _buildInfoSection('Paramètres du contrat', [
-              // Date de début
               OutlinedButton.icon(
                 icon: const Icon(Icons.calendar_today, size: 20),
                 label: Text(_dateDebut.isEmpty ? 'Sélectionner date de début' : _dateDebut),
@@ -123,7 +159,7 @@ class _ContratFormState extends State<ContratForm> {
                 onPressed: () async {
                   final date = await showDatePicker(
                     context: context,
-                    initialDate: DateTime.now().add(const Duration(days: 7)),
+                    initialDate: DateTime.now().add(const Duration(days: 1)),
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
@@ -136,22 +172,24 @@ class _ContratFormState extends State<ContratForm> {
               ),
 
               const SizedBox(height: 16),
-
-              // Durée du bail
               TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Durée (mois)',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: InputDecoration(
+                  labelText: _selectedTypePaiement == 'Journalier' ? 'Durée (jours)' : 'Durée (mois)',
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 ),
                 keyboardType: TextInputType.number,
-                onChanged: (value) => _duree = value,
+                onChanged: (value) {
+                  setState(() {
+                    _duree = value;
+                    _totalCalcule = _calculerTotal();
+                  });
+                },
                 controller: TextEditingController(text: _duree),
               ),
 
               const SizedBox(height: 16),
 
-              // Mode de paiement
               DropdownButtonFormField<String>(
                 value: _selectedTypePaiement,
                 decoration: const InputDecoration(
@@ -159,8 +197,7 @@ class _ContratFormState extends State<ContratForm> {
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 16),
                 ),
-                items: ['Mensuel', 'Trimestriel', 'Semestriel', 'Journalier']
-                    .map((String value) {
+                items: modesPaiementOptions.map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),
@@ -169,6 +206,14 @@ class _ContratFormState extends State<ContratForm> {
                 onChanged: (newValue) {
                   setState(() {
                     _selectedTypePaiement = newValue!;
+                    
+                    if (_selectedTypePaiement == 'Journalier' && _duree == '12') {
+                      _duree = '1'; 
+                    } else if (_selectedTypePaiement != 'Journalier' && _duree == '1') {
+                      _duree = '12'; 
+                    }
+                    
+                    _totalCalcule = _calculerTotal();
                   });
                 },
               ),
@@ -188,7 +233,7 @@ class _ContratFormState extends State<ContratForm> {
           ),
           onPressed: _dateDebut.isEmpty ? null : () {
             widget.onSubmit(_dateDebut, _duree, _selectedTypePaiement);
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           },
           child: const Text('Confirmer', style: TextStyle(color: Colors.white)),
         ),
@@ -244,4 +289,46 @@ class _ContratFormState extends State<ContratForm> {
       ),
     );
   }
+Widget buildFinancialDetails(Map<String, dynamic> contratData) {
+  final caution = (contratData['caution'] as num?)?.toDouble() ?? 0.0;
+  
+  return Column(
+    children: [
+      if (_selectedTypePaiement != 'Journalier')
+        _buildInfoRow('Avance:', '${(contratData['avance'] ?? 0).toStringAsFixed(0)} FCFA'),
+      _buildInfoRow('Caution:', '${caution.toStringAsFixed(0)} FCFA'),
+      if (_selectedTypePaiement == 'Journalier')
+        _buildInfoRow('Loyer ($_duree jours):', 
+          '${(_getCurrentLoyer() * (int.tryParse(_duree) ?? 1)).toStringAsFixed(0)} FCFA'),
+      _buildInfoRow('Total:', '${_totalCalcule.toStringAsFixed(0)} FCFA', isBold: true),
+    ],
+  );
+}
+Widget buildLoyerDetails() {
+  final loyerMois = widget.contratData['detailsLogement']?['loyerMois'] as num?;
+  final loyerJour = widget.contratData['detailsLogement']?['loyerJour'] as num?;
+  
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (loyerMois != null)
+        _buildInfoRow('Loyer mensuel:', '${loyerMois.toStringAsFixed(2)} FCFA'),
+      if (loyerJour != null)
+        _buildInfoRow('Loyer journalier:', '${loyerJour.toStringAsFixed(2)} FCFA'),
+      _buildInfoRow(
+        'Loyer appliqué:', 
+        '${_getCurrentLoyer().toStringAsFixed(2)} FCFA/${_selectedTypePaiement == 'Journalier' ? 'jour' : 'mois'}',
+        isBold: true
+      ),
+    ],
+  );
+}
+
+double _getCurrentLoyer() {
+  return _selectedTypePaiement == 'Journalier' 
+      ? (widget.contratData['loyerJour'] ?? 
+         (widget.contratData['detailsLogement']?['loyerJour'] as num?)?.toDouble() ?? 0.0)
+      : (widget.contratData['loyerMois'] ?? 
+         (widget.contratData['detailsLogement']?['loyerMois'] as num?)?.toDouble() ?? 0.0);
+}
 }
