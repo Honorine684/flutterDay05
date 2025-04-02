@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Logement {
   final String id;
   final String titre;
@@ -68,4 +70,42 @@ class Logement {
     required this.creneaux, 
     
   });
+  factory Logement.fromFirestore(DocumentSnapshot doc) {
+  Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  return Logement(
+    id: doc.id,
+    titre: data['titre'] ?? 'Titre non disponible',
+    adresse: data['adresse'] ?? 'Adresse non disponible',
+    typeProperty: data['propertyType'] ?? 'Type non disponible',
+    photo1: data['photo1'] ?? '',
+    surface: (data['surface'] ?? 0).toDouble(),
+    latitude: (data['latitude'] ?? 0).toDouble(),
+    longitude: (data['longitude'] ?? 0).toDouble(),
+    loyerJour: (data['loyerJour'] ?? 0).toDouble(),
+    loyerMois: (data['loyerMois'] ?? 0).toDouble(),
+    chambres: data['chambres'] ?? 0,
+    statut: data['statut'] ?? 'Inocupper',
+    mode: data['mode'],
+    balcons: data['balcons'] ?? 0,
+    cuisines: data['cuisines'] ?? 0,
+    etages: data['etages'] ?? 0,
+    salleDeBains: data['salleDeBains'] ?? 0,
+    parking: data['parking'] ?? 0,
+    salons: data['salons'] ?? 0,
+    fraisDeVisite: (data['fraisDeVisite'] ?? 0).toDouble(),
+    estClimatise: data['estClimatise'] ?? false,
+    estSanitaire: data['estSanitaire'] ?? false,
+    estMeuble: data['estMeuble'] ?? false,
+    typeDeBail: data['typeDeBail'] ?? '',
+    conditionAdmission: data['conditionAdmission'] ?? '',
+    description: data['description'] ?? '',
+    photo2: data['photo2'] ?? '',
+    photo3: data['photo3'] ?? '',
+    terrasses: data['terrasses'] ?? 0,
+    avance: (data['avance'] ?? 0).toDouble(),
+    gestionnaireNom: data['gestionnaireNom'],
+    etat: data['etat'] ?? '',
+    creneaux: List<Map<String, dynamic>>.from(data['creneaux'] ?? []),
+  );
+}
 }

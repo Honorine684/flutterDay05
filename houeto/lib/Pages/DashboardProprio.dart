@@ -3,7 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
 import 'package:houeto/Pages/NotificationsPage.dart';
-import 'package:houeto/Pages/PageDemandeLocation.dart';
+import 'package:houeto/Pages/PageBienConfierAVous.dart';
+import 'package:houeto/Pages/PageStatistique.dart';
 import 'package:houeto/Pages/ShowBien.dart';
 import 'package:houeto/Pages/pageVisite.dart';
 import 'package:houeto/Services/Firebase/auth.dart';
@@ -23,6 +24,56 @@ class _ProprioDashboardState extends State<ProprioDashboard> {
   int nbLocataires = 0;
   double revenus = 0;
   int plaintesNonLues = 0;
+  Future<Map<String, dynamic>> _getProprioStats(String userId) async {
+  try {
+    // Compter les propriétés
+    QuerySnapshot proprietesSnapshot = await FirebaseFirestore.instance
+        .collection('logement')
+        .where('proprietaireId', isEqualTo: userId)
+        .get();
+
+    // compter les locataires 
+    QuerySnapshot locatairesSnapshot = await FirebaseFirestore.instance
+        .collection('contrats')
+        .where('proprietaireId', isEqualTo: userId)
+        .get();
+
+    // calculer les revenus (exemple basique)
+    double totalRevenus = 0;
+    QuerySnapshot paiementsSnapshot = await FirebaseFirestore.instance
+        .collection('paiements')
+        .where('proprietaireId', isEqualTo: userId)
+        .where('statut', isEqualTo: 'payé')
+        .get();
+
+    for (var doc in paiementsSnapshot.docs) {
+      totalRevenus += (doc['montant'] as num).toDouble();
+    }
+
+    // plaintes non lues
+    QuerySnapshot plaintesSnapshot = await FirebaseFirestore.instance
+        .collection('plaintes')
+        .where('proprietaireId', isEqualTo: userId)
+        .where('lu', isEqualTo: false)
+        .get();
+
+    return {
+      'nbProprietes': proprietesSnapshot.size,
+      'nbLocataires': locatairesSnapshot.size,
+      'revenus': totalRevenus,
+      'plaintesNonLues': plaintesSnapshot.size,
+    };
+    
+  } catch (e) {
+    print("Erreur lors du calcul des stats: $e");
+    return {
+      'nbProprietes': 0,
+      'nbLocataires': 0,
+      'revenus': 0.0,
+      'plaintesNonLues': 0,
+    };
+  }
+}
 
   Future<void> getUserData() async {
     try {
@@ -51,14 +102,8 @@ class _ProprioDashboardState extends State<ProprioDashboard> {
     }
   }
 
- Future<Map<String, dynamic>> _getProprioStats(String userId) async {
-  return {
-    'nbProprietes': 5,
-    'nbLocataires': 3,
-    'revenus': 125000.0, 
-    'plaintesNonLues': 2
-  };
-}
+ 
+
 
   @override
   void initState() {
@@ -95,11 +140,20 @@ class _ProprioDashboardState extends State<ProprioDashboard> {
         },
       },
       {
-        'icon': Icons.rectangle_outlined,
-        'title': 'Demandes location',
+        'icon': Icons.bar_chart,
+        'title': 'Statistiques',
         'color': Colors.blue,
         'onTap': () {
-          Navigator.push(context, MaterialPageRoute(builder: (context)=> const Pagedemandelocation()));
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> StatistiquePage()));
+
+        },
+      },
+      {
+        'icon': Icons.real_estate_agent,
+        'title': 'Confier à vous',
+        'color': Colors.orange,
+        'onTap': () {
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> const GestionLogementsPage()));
 
         },
       },

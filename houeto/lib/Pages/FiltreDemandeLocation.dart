@@ -346,7 +346,7 @@ class DemandesLocationFiltreState extends State<DemandesLocationFiltre>
   }
 
   Widget _buildLocationCard(Map<String, dynamic> demande, bool isCurrent) {
-    return Container(
+    return SizedBox(
       width: MediaQuery.of(context).size.width * 0.85,
       height: 280,
       child: Card(

@@ -59,6 +59,8 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   open_file: ^3.5.10
+  syncfusion_flutter_charts: ^29.1.35
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
