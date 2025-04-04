@@ -225,6 +225,13 @@ Future<void> deleteLogement(String idLogement)async{
     snapshots();
     return gestionnaireLogement;
   }
+Stream<QuerySnapshot> recupeLogementNonConfieAuGestionnaire(String userId){
+    final gestionnaireLogement = logement.
+    where('mode',isEqualTo: 'Non confier').
+    where('proprietaireId',isEqualTo:userId).
+    snapshots();
+    return gestionnaireLogement;
+  }
 
  Stream<List<Map<String, dynamic>>> getVisitesByStatus({
   required String userId, 

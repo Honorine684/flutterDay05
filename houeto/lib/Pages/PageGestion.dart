@@ -67,7 +67,7 @@ void dispose() {
     print("Chargement des logements...");
 
     _logementSubscription = FirestoreService()
-        .getLogement(currentUser.uid)
+        .recupeLogementNonConfieAuGestionnaire(currentUser.uid)
         .listen((snapshot) async {
       print("Données reçues: ${snapshot.docs.length} logements");
       List<Logement> listeLogement = [];
@@ -541,7 +541,7 @@ void dispose() {
                 elevation: 8,
                 child: SizedBox(
                   width: double.infinity,
-                  height: 160,
+                  height: 170,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
