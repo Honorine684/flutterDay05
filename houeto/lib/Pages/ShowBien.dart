@@ -436,18 +436,12 @@ class _ShowbienState extends State<Showbien> {
 
     final logementName = logementDoc['titre'] ?? "un logement";
 
-    await FirebaseFirestore.instance
-        .collection('logement')
-        .doc(logementId)
-        .update({
-      'gestionnaireId': proprietaireId,
-      'mode': 'Confier',
-    });
+
 
     await NotificationService().sendNotification(
       receiverId: proprietaireId,
       title: "Demande de gestion",
-      body: "Le logement \"$logementName\" vous a été confié par $proprietaireName",
+      body: "Le logement \"$logementName\" vous a été confié",
       logementId: logementId,
     );
 

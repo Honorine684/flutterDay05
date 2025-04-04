@@ -116,6 +116,10 @@ class _ConnexionpageState extends State<ConnexionPage> {
                               try {
                                 await Auth().signinWithEmailAndPassword(
                                     email.text, passWord.text);
+                                Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (context) => const Bottombar())
+        );
                               } on FirebaseAuthException catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

@@ -12,7 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:googleapis_auth/auth_io.dart' as auth;
 
 class PushNotification {
-  String? _fcmToken;
+  String? fcmToken;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -59,14 +59,13 @@ class PushNotification {
   void _getFCMToken() async {
     String? token = await FirebaseMessaging.instance.getToken();
     if (token != null) {
-      _fcmToken = token;
+      fcmToken = token;
       print("Token FCM : $token");
     } else {
       print("Impossible de récupérer le token !");
     }
   }
 
-  // Écoute les notifications entrantes
   void _initFirebaseListeners() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print(
@@ -129,7 +128,7 @@ void _handleNotificationClick(RemoteMessage message) {
 
 
   // Envoyer une notification FCM
-  Future<void> sendNotification(
+/*  Future<void> sendNotification(
     String title,
     String body,
   ) async {
@@ -166,12 +165,12 @@ void _handleNotificationClick(RemoteMessage message) {
     } else {
       print("Erreur (${response.statusCode}) : ${response.body}");
     }
-  }
+  }*/
 
   // Obtenir un token d'accès Firebase
   Future<String> _getAccessToken() async {
     final serviceAccountJson = jsonDecode(
-      await rootBundle.loadString('assets/keys/dcliclogement-4cdb5e3fcb55.json'),
+      await rootBundle.loadString('assets/keys/dcliclogement-84740726b7d3.json'),
     );
 
     List<String> scopes = [
@@ -195,6 +194,13 @@ void _handleNotificationClick(RemoteMessage message) {
   }) async {
     String? token = await Auth().getUserFCMToken(receiverId);
 
+if (token == null || token.isEmpty) {
+
+  await storeNotificationForLater(receiverId, title, body, payload);
+  print("Utilisateur non connecté, notification stockée pour plus tard");
+  return;
+}
+
     String accessToken = await _getAccessToken();
     String url = 'https://fcm.googleapis.com/v1/projects/dcliclogement/messages:send';
 
@@ -202,7 +208,7 @@ void _handleNotificationClick(RemoteMessage message) {
       "message": {
         "token": token,
         "notification": {"title": title, "body": body},
-        "data": payload, // Ajoute les données utiles pour redirection
+        "data": payload, 
         "android": {"priority": "high"},
       },
     };
@@ -234,7 +240,77 @@ void _handleNotificationClick(RemoteMessage message) {
       print("FCM Token mis à jour : $token");
     }
   }
-  
+  Future<void> storeNotificationForLater(
+  String userId,
+  String title,
+  String body,
+  Map<String, String> payload
+) async {
+  await FirebaseFirestore.instance
+      .collection('pendingNotifications')
+      .add({
+        'userId': userId,
+        'title': title,
+        'body': body,
+        'payload': payload,
+        'createdAt': FieldValue.serverTimestamp(),
+        'sent': false
+      });
+}
+Future<void> checkPendingNotifications() async {
+  String? userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return;
+
+  QuerySnapshot pendingNotifications = await FirebaseFirestore.instance
+      .collection('pendingNotifications')
+      .where('userId', isEqualTo: userId)
+      .where('sent', isEqualTo: false)
+      .get();
+
+  if (pendingNotifications.docs.isEmpty) {
+    print("Aucune notification en attente");
+    return;
+  }
+
+  for (var doc in pendingNotifications.docs) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    await showLocalNotification(
+      data['title'] ?? "Sans titre",
+      data['body'] ?? "Notification",
+      Map<String, String>.from(data['payload'] ?? {}),
+    );
+    await doc.reference.update({'sent': true});
+  }
+}
+ Future<void> showLocalNotification(
+  String title,
+  String body,
+  Map<String, String> payload,
+) async {
+  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    'high_importance_channel',
+    'High Importance Notifications', 
+    importance: Importance.max,
+    priority: Priority.high,
+    icon: '@mipmap/logo', 
+    playSound: true,
+    enableVibration: true,
+  );
+
+  const NotificationDetails platformDetails = NotificationDetails(
+    android: androidDetails,
+  );
+
+  await _flutterLocalNotificationsPlugin.show(
+    0, 
+    title,
+    body,
+    platformDetails,
+    payload: jsonEncode(payload), 
+  );
+
+  print("Notification locale affichée: $title - $body");
+} 
 
 
 }
