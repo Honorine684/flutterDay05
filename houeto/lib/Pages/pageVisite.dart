@@ -90,6 +90,7 @@ Widget _buildVisitesList(String userId, String status) {
                 item['jour'],
                 item['heure'],
                 item['telephone'],
+                item['conditionLocataire'],
                 context,
               );
             },
@@ -99,175 +100,272 @@ Widget _buildVisitesList(String userId, String status) {
     },
   );
 }
+Future<List<Map<String, dynamic>>> _getLogementsAndUsers(
+    String userId, List<QueryDocumentSnapshot> visiteDocs) async {
+  // Récupérer les logements où l'utilisateur est propriétaire
+  final logementsProprietaireSnapshot = await FirebaseFirestore.instance
+      .collection('logement')
+      .where('proprietaireId', isEqualTo: userId)
+      .get();
 
-  Future<List<Map<String, dynamic>>> _getLogementsAndUsers(
-      String userId, List<QueryDocumentSnapshot> visiteDocs) async {
-    //récupérer les logements du propriétaire
-    final logementsSnapshot = await FirebaseFirestore.instance
-        .collection('logement')
-        .where('proprietaireId', isEqualTo: userId)
-        .get();
+  // Récupérer les logements où l'utilisateur est gestionnaire
+  final logementsGestionnaireSnapshot = await FirebaseFirestore.instance
+      .collection('logement')
+      .where('gestionnaireId', isEqualTo: userId)
+      .get();
 
-    final logementsMap = {
-      for (var doc in logementsSnapshot.docs) doc.id: doc.data()
-    };
+  // Combiner les deux ensembles de logements dans une seule Map
+  final logementsMap = {
+    for (var doc in [...logementsProprietaireSnapshot.docs, ...logementsGestionnaireSnapshot.docs])
+      doc.id: doc.data()
+  };
 
-    // Filtrer les visites pour ne garder que celles concernant les logements du propriétaire
-    final visitesFiltrees = visiteDocs.where((visiteDoc) {
-      final visite = visiteDoc.data() as Map<String, dynamic>;
-      return logementsMap.containsKey(visite['logementId']);
-    }).toList();
+  // Filtrer les visites pour ne garder que celles concernant les logements du propriétaire ou du gestionnaire
+  final visitesFiltrees = visiteDocs.where((visiteDoc) {
+    final visite = visiteDoc.data() as Map<String, dynamic>;
+    return logementsMap.containsKey(visite['logementId']);
+  }).toList();
 
-    // Récupérer tous les IDs des locataires uniques
-    final locataireIds = visitesFiltrees
-        .map((doc) =>
-            (doc.data() as Map<String, dynamic>)['locataireId'] as String)
-        .toSet()
-        .toList();
+  // Si aucune visite trouvée, retourner une liste vide
+  if (visitesFiltrees.isEmpty) {
+    return [];
+  }
 
-    // Récupérer les informations des utilisateurs
+  // Récupérer tous les IDs des locataires uniques
+  final locataireIds = visitesFiltrees
+      .map((doc) => (doc.data() as Map<String, dynamic>)['locataireId'] as String)
+      .where((id) => id.isNotEmpty)
+      .toSet()
+      .toList();
+
+  // Récupérer les informations des utilisateurs si nous avons des locataires
+  final userMap = <String, Map<String, dynamic>>{};
+  if (locataireIds.isNotEmpty) {
     final users = await FirebaseFirestore.instance
         .collection('users')
         .where(FieldPath.documentId, whereIn: locataireIds)
         .get();
 
-    final userMap = {for (var user in users.docs) user.id: user.data()};
-
-    // Combiner toutes les données
-    return visitesFiltrees.map((doc) {
-      final visite = doc.data() as Map<String, dynamic>;
-      final userData = userMap[visite['locataireId']];
-      final logementData = logementsMap[visite['logementId']];
-
-      return {
-        'visite': visite,
-        'docId': doc.id,
-        'nomComplet': userData != null
-            ? '${userData['prenom']} ${userData['nom']}'
-            : 'Locataire inconnu',
-        'logementNom': logementData?['titre'] ?? 'Logement inconnu',
-        'jour': visite['jour'],
-        'heure': visite['heure'],
-        'telephone': visite['telephone']
-      };
-    }).toList();
+    for (var user in users.docs) {
+      userMap[user.id] = user.data();
+    }
   }
 
-  Widget _buildVisiteCard(
-    Map<String, dynamic> visite,
-    String docId,
-    String nomComplet,
-    String logementNom,
-    String jour,
-    String heure,
-    String telephone,
-    BuildContext context,
-  ) {
-    final statusColor = visite['statut'] == 'Annuler'
-        ? Colors.red
-        : (visite['statut'] == 'Confirmer' ? Colors.green : Colors.orange);
+  // Combiner toutes les données
+  return visitesFiltrees.map((doc) {
+    final visite = doc.data() as Map<String, dynamic>;
+    final userData = userMap[visite['locataireId']];
+    final logementData = logementsMap[visite['logementId']];
+    
+    // Déterminer si l'utilisateur est propriétaire ou gestionnaire de ce logement
+    final String role = logementData != null && logementData['proprietaireId'] == userId
+        ? 'Propriétaire'
+        : 'Gestionnaire';
 
-    return Card(
-      elevation: 5,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Header avec nom du locataire et statut
+    return {
+      'visite': visite,
+      'docId': doc.id,
+      'nomComplet': userData != null
+          ? '${userData['prenom']} ${userData['nom']}'
+          : 'Locataire inconnu',
+      'logementNom': logementData?['titre'] ?? 'Logement inconnu',
+      'jour': visite['jour'],
+      'heure': visite['heure'],
+      'telephone': visite['telephone'],
+      'conditionLocataire': visite['conditionLocataire'],
+      'role': role,  // Indique le rôle de l'utilisateur pour ce logement
+    };
+  }).toList();
+}
+
+  Widget _buildVisiteCard(
+  Map<String, dynamic> visite,
+  String docId,
+  String nomComplet,
+  String logementNom,
+  String jour,
+  String heure,
+  String telephone,
+  String conditionLocataire,
+  
+  BuildContext context, {
+  String role = 'Propriétaire', // Ajout du paramètre optionnel pour le rôle
+}) {
+  final statusColor = visite['statut'] == 'Annuler'
+      ? Colors.red
+      : (visite['statut'] == 'Confirmer' ? Colors.green : Colors.orange);
+
+  return Card(
+    elevation: 5,
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // En-tête avec nom du locataire et statut
           Row(
             children: [
-              const Icon(Icons.person, color: Colors.blue, size: 20),
-              const SizedBox(width: 8),
+              CircleAvatar(
+                backgroundColor: Colors.blue.withOpacity(0.2),
+                child: const Icon(Icons.person, color: Colors.blue),
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  nomComplet,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nomComplet,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      "Statut: $conditionLocataire",
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Chip(
                 label: Text(visite['statut']),
                 backgroundColor: statusColor.withOpacity(0.2),
-                labelStyle: TextStyle(color: statusColor),
+                labelStyle: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // Détails du logement
+          
+          const Divider(height: 24),
+          
+          // Détails du logement et rôle
           Row(
             children: [
               const Icon(Icons.home, size: 20, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                logementNom,
-              )
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Date de la visite
-          Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                "Envoyé le ${DateFormat('dd/MM/yyyy à HH:mm').format((visite['timestamp'] as Timestamp).toDate())}",
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  logementNom,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  role,
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             ],
           ),
-          Row(
-            children: [
-              const Icon(Icons.calendar_view_day_rounded,
-                  size: 20, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                "Demandé pour le $jour à $heure",
-              ),
-            ],
-          ),
-
-          // Boutons d'action (uniquement pour les visites "En attente")
-         if (visite['statut'] == 'En attente') ...[
-  const SizedBox(height: 12),
-  Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-    // Bouton Annuler
-    OutlinedButton(
-      onPressed: () => _annulerVisite(docId, context),
-      style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: Colors.red),
-      ),
-      child: const Text('Annuler', style: TextStyle(color: Colors.red)),
-    ),
-    const SizedBox(width: 10),
-
-    // Bouton Accepter
-    ElevatedButton(
-      onPressed: () => _confirmerVisite(docId, context),
-      child: const Text('Accepter'),
-    ),
-  ]),
-] 
-else if (visite['statut'] == 'Confirmer') ...[
-  const SizedBox(height: 12),
-  Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-    ElevatedButton.icon(
-      icon: const Icon(Icons.document_scanner_rounded,color: Colors.white,),
-      label: const Text('Envoyer contrat'),
-      onPressed: () => {
-       envoyerContrat(docId, context, nomComplet, logementNom),
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
-    ),
-  ])
-],
           
-        ]),
+          const SizedBox(height: 16),
+          
+          // Informations sur la date
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Envoyé le ${DateFormat('dd/MM/yyyy à HH:mm').format((visite['timestamp'] as Timestamp).toDate())}",
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.schedule, size: 18, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Demandé pour le $jour à $heure",
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Boutons d'action
+          if (visite['statut'] == 'En attente')
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.close, size: 18),
+                  label: const Text('Refuser'),
+                  onPressed: () => _annulerVisite(docId, context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.check, size: 18),
+                  label: const Text('Accepter'),
+                  onPressed: () => _confirmerVisite(docId, context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                ),
+              ],
+            )
+          else if (visite['statut'] == 'Confirmer')
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.document_scanner_rounded, size: 18),
+                  label: const Text('Envoyer contrat'),
+                  onPressed: () => envoyerContrat(docId, context, nomComplet, logementNom),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    elevation: 2,
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _confirmerVisite(String visiteId, BuildContext context) async {
     try {

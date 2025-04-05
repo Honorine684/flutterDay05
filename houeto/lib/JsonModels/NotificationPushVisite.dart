@@ -9,6 +9,7 @@ class NotificationVisite {
   final String body;
   final String? visiteId; 
   final String? contratId;
+  final String? demandeId;
   final Timestamp timestamp;
   bool isRead;
 
@@ -20,6 +21,7 @@ class NotificationVisite {
     required this.body,
     this.visiteId,
     this.contratId,
+    this.demandeId,
     required this.timestamp,
     this.isRead = false,
   });
@@ -32,6 +34,7 @@ class NotificationVisite {
       'body': body,
       'visiteId':visiteId,
       'contratId':contratId,
+      'demandeId':demandeId,
       'timestamp': timestamp,
       'isRead': isRead,
     };
@@ -46,6 +49,7 @@ class NotificationVisite {
       body: map['body'],
       visiteId: map['visiteId'],
       contratId: map['contratId'],
+      demandeId: map['demandeId'],
       timestamp: map['timestamp'],
       isRead: map['isRead'] ?? false,
     );
@@ -65,7 +69,8 @@ class NotificationServiceVisite {
     required String title,
     required String body,
     String? visiteId,
-    String? contratId
+    String? contratId,  
+    String? demandeId
   }) async {
     try {
       // Récupérer l'ID de l'utilisateur actuel
@@ -85,6 +90,7 @@ class NotificationServiceVisite {
         body: body,
         visiteId: visiteId,
         contratId: contratId,
+        demandeId: demandeId,
         timestamp: Timestamp.now(),
       );
 

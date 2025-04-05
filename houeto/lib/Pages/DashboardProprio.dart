@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
 import 'package:houeto/Pages/NotificationsPage.dart';
 import 'package:houeto/Pages/PageBienConfierAVous.dart';
+import 'package:houeto/Pages/PageDemandeLocation.dart';
 import 'package:houeto/Pages/PageStatistique.dart';
 import 'package:houeto/Pages/ShowBien.dart';
 import 'package:houeto/Pages/pageVisite.dart';
@@ -136,6 +137,15 @@ class _ProprioDashboardState extends State<ProprioDashboard> {
         'color': Colors.green,
         'onTap': () {
           Navigator.push(context, MaterialPageRoute(builder: (context)=> const PageVisites()));
+
+        },
+      },
+      {
+        'icon': Icons.calendar_today,
+        'title': 'Demandes location',
+        'color': Colors.deepPurple,
+        'onTap': () {
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> const Pagedemandelocation()));
 
         },
       },

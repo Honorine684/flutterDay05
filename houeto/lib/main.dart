@@ -32,18 +32,28 @@ Future<void> main() async {
   });
 
    runApp(MaterialApp(
+    
     navigatorKey: navigatorKey,
     home: FutureBuilder(
       future: FirebaseAuth.instance.authStateChanges().first,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          // Vérifie les notifications après l'état d'authentification
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             await pushNotificationService.checkPendingNotifications();
           });
         }
         return Redirectionpage();
+        
       },
     ),
-  ));
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData(
+      scaffoldBackgroundColor: Colors.white,
+      primaryColor:Color(0xffF6CFF3),
+    
+      colorScheme: ColorScheme.light(
+     primary: Colors.blue, 
+     
+    ),
+  )));
 }

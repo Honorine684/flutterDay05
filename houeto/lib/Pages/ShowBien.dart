@@ -5,6 +5,7 @@ import 'package:houeto/JsonModels/Logement.dart';
 import 'package:houeto/JsonModels/NotificationPush.dart';
 import 'package:houeto/Pages/EditLogement.dart';
 import 'package:houeto/Pages/PageDetails.dart';
+import 'package:houeto/Services/Firebase/FirestoreService.dart';
 
 class Showbien extends StatefulWidget {
   const Showbien({super.key});
@@ -318,10 +319,7 @@ class _ShowbienState extends State<Showbien> {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await FirebaseFirestore.instance
-                    .collection('logement')
-                    .doc(logementId)
-                    .delete();
+                FirestoreService().deleteLogement(logementId);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text("Logement supprimé avec succès"),
