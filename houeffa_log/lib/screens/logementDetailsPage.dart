@@ -265,7 +265,7 @@ class LogementDetailsPage extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder:
-                          (context) => DemandeLogement(logementId: '',),
+                          (context) => DemandeLogement(logementId: logement.id),
                     ),
                   );
                 },

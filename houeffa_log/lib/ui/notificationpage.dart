@@ -53,9 +53,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   itemCount: notifications.length,
                   itemBuilder: (context, index) {
                     final notification = notifications[index].data() as Map<String, dynamic>;
+
                     return Card(
-                      margin: const EdgeInsets.all(8.0),
-                      child: ListTile(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      child: ExpansionTile(
                         leading: Icon(
                           notification['isRead'] == false
                               ? Icons.notifications_active
@@ -66,29 +67,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           notification['title'] ?? 'Notification',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(notification['body'] ?? 'Détails non disponibles'),
-                            const SizedBox(height: 5),
-                            Text(
-                              'Date : ${DateFormat('dd MMM yyyy à HH:mm').format((notification['timestamp'] as Timestamp).toDate())}',
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
-                          ],
+                        subtitle: Text(
+                          'Date : ${DateFormat('dd MMM yyyy à HH:mm').format((notification['timestamp'] as Timestamp).toDate())}',
+                          style: TextStyle(color: Colors.grey.shade600),
                         ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.visibility),
-                          onPressed: () {
-                            FirebaseFirestore.instance
-                                .collection('visiteNotification')
-                                .doc(notifications[index].id)
-                                .update({'isRead': true});
-                            setState(() {
-                              notification['isRead'] = true;
-                            });
-                          },
-                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                            child: Text(notification['body'] ?? 'Détails non disponibles'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              FirebaseFirestore.instance
+                                  .collection('visiteNotification')
+                                  .doc(notifications[index].id)
+                                  .update({'isRead': true});
+                              setState(() {
+                                notification['isRead'] = true;
+                              });
+                            },
+                            icon: const Icon(Icons.visibility),
+                            label: const Text('Marquer comme lu'),
+                          ),
+                        ],
                       ),
                     );
                   },

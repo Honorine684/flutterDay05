@@ -44,6 +44,10 @@ class _DemandeLogementState extends State<DemandeLogement> {
           return;
         }
 
+        // 🔍 Debug
+        print('logement_id reçu : ${widget.logementId}');
+        print('locataire_id : ${user.uid}');
+
         await FirebaseFirestore.instance.collection('demandes_logement').add({
           'nom': _nomController.text.trim(),
           'prenom': _prenomController.text.trim(),
@@ -52,7 +56,7 @@ class _DemandeLogementState extends State<DemandeLogement> {
           'profession': _professionController.text.trim(),
           'type_location': _typeLocation,
           'timestamp': Timestamp.now(),
-          'logement_id': widget.logementId,
+          'logement_id': widget.logementId.toString(), // ✅ forcer en string
           'locataire_id': user.uid,
         });
 
