@@ -110,46 +110,45 @@ class FirestoreService {
   return logementStream;
 }
 Future<void> updateLogement(
-  String logementId,
-  {
-    String? titre,
-    String? adresse,
-    String? propertyType,
-    double? surface,
-    int? anneDeConstruction,
-    int? nbreDeChambre,
-    int? nbreDeCuisine,
-    int? nbreDeSalleDeBain,
-    int? nbreDeSalons,
-    int? nbreDeTerrasse,
-    int? nbreDeBalcon,
-    int? nbreDeParking,
-    bool? estSanitaire,
-    bool? estMeuble,
-    bool? estClimatise,
-    String? etat,
-    double? avance,
-    double? loyerMois,
-    double? loyerJour,
-    double? caution,
-    List<Jourdisponibilite>? jours,
-    String? conditionAdmission,
-    String? typeDeBail,
-    double? fraisVisite,
-    String? photo1,
-    String? photo2,
-    String? photo3,
-    String? photo4,
-    String? description,
-    double? latitude,
-    double? longitude,
-    String? statut
-  }) async {
-    
+  String logementId, {
+  String? titre,
+  String? adresse,
+  String? propertyType,
+  double? surface,
+  int? anneDeConstruction,
+  int? nbreDeChambre,
+  int? nbreDeCuisine,
+  int? nbreDeSalleDeBain,
+  int? nbreDeSalons,
+  int? nbreDeTerrasse,
+  int? nbreDeBalcon,
+  int? nbreDeParking,
+  bool? estSanitaire,
+  bool? estMeuble,
+  bool? estClimatise,
+  String? etat,
+  double? avance,
+  double? loyerMois,
+  double? loyerJour,
+  double? caution,
+  List<Jourdisponibilite>? jours,
+  String? conditionAdmission,
+  String? typeDeBail,
+  double? fraisVisite,
+  String? photo1,
+  String? photo2,
+  String? photo3,
+  String? photo4,
+  String? description,
+  double? latitude,
+  double? longitude,
+  String? statut,
+  int? nbreEtages
+}) async {
   Map<String, dynamic> updateData = {
     'Timestamp': Timestamp.now(),
   };
-  
+
   if (titre != null) updateData['titre'] = titre;
   if (adresse != null) updateData['adresse'] = adresse;
   if (propertyType != null) updateData['propertyType'] = propertyType;
@@ -161,6 +160,7 @@ Future<void> updateLogement(
   if (nbreDeTerrasse != null) updateData['terrasses'] = nbreDeTerrasse;
   if (nbreDeBalcon != null) updateData['balcons'] = nbreDeBalcon;
   if (nbreDeParking != null) updateData['parking'] = nbreDeParking;
+  if (nbreEtages != null) updateData['etages'] = nbreEtages;
   if (estSanitaire != null) updateData['estSanitaire'] = estSanitaire;
   if (estMeuble != null) updateData['estMeuble'] = estMeuble;
   if (estClimatise != null) updateData['estClimatise'] = estClimatise;
@@ -180,16 +180,14 @@ Future<void> updateLogement(
   if (latitude != null) updateData['latitude'] = latitude;
   if (longitude != null) updateData['longitude'] = longitude;
   if (statut != null) updateData['statut'] = statut;
+
   await logement.doc(logementId).update(updateData);
-
-  if (jours != null) {
+  
+  if (jours != null && jours.isNotEmpty) {
     var joursCollection = logement.doc(logementId).collection('joursDisponibles');
-    var existingDays = await joursCollection.get();
-    for (var doc in existingDays.docs) {
-      await doc.reference.delete();
-    }
-
+    
     List<Jourdisponibilite> joursDisponibles = jours.where((jour) => jour.estDisponible).toList();
+    
     for (Jourdisponibilite jour in joursDisponibles) {
       if (jour.estDisponible && jour.creneaux.isNotEmpty) {
         await joursCollection.doc(jour.day).set(jour.toMap());
@@ -198,8 +196,48 @@ Future<void> updateLogement(
   }
 }
 //delete
-Future<void> deleteLogement(String idLogement)async{
-  return logement.doc(idLogement).delete();
+Future<void> deleteLogement(String logementId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('logement')
+        .doc(logementId)
+        .get();
+
+    if (!doc.exists) {
+      throw Exception("Le logement n'existe pas");
+    }
+
+    await _deleteSubcollection(logementId, 'joursDisponibles');
+
+    await FirebaseFirestore.instance
+        .collection('logement')
+        .doc(logementId)
+        .delete();
+
+    print('Logement et joursDisponibles supprimés avec succès');
+  } catch (e) {
+    print('Erreur lors de la suppression: $e');
+    rethrow;
+  }
+}
+
+Future<void> _deleteSubcollection(String logementId, String subcollection) async {
+  final collectionPath = 'logement/$logementId/$subcollection';
+  final collectionRef = FirebaseFirestore.instance.collection(collectionPath);
+  
+  const batchSize = 20;
+  QuerySnapshot snapshot = await collectionRef.limit(batchSize).get();
+
+  while (snapshot.docs.isNotEmpty) {
+    final batch = FirebaseFirestore.instance.batch();
+    
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    await batch.commit();
+    snapshot = await collectionRef.limit(batchSize).get();
+  }
 }
 
   Stream<QuerySnapshot> getCreneauxForLogement(String logementId) {
@@ -264,6 +302,34 @@ Stream<QuerySnapshot> recupeLogementNonConfieAuGestionnaire(String userId){
             })
             .toList();
       });
+}
+
+ // getJoursDisponibles(String logementId) {}
+Future<DocumentSnapshot?> getLogementById(String logementId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('logement')
+        .doc(logementId)
+        .get();
+    
+    return doc;
+  } catch (e) {
+    print("Erreur dans getLogementById: $e");
+    return null;
+  }
+}
+
+Future<QuerySnapshot> getJoursDisponibles(String logementId) async {
+  try {
+    return await FirebaseFirestore.instance
+        .collection('logement')
+        .doc(logementId)
+        .collection('joursDisponibles')
+        .get();
+  } catch (e) {
+    print("Erreur dans getJoursDisponibles: $e");
+    throw e;
+  }
 }
 }
   

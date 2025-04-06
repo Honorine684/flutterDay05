@@ -29,6 +29,7 @@ class ContratService {
     
 
     return {
+      'demandeLocationId':demandeLocationId,
       'visiteId': visiteId,
       'locataireId': locataireId,
       'logementId': logementId,
@@ -142,6 +143,13 @@ Future<String> envoyerContrat({
   if (contratData['visiteId'] != null) {
     await _firestore.collection('visite')
       .doc(contratData['visiteId'])
+      .update({
+        'statut': 'Contrat envoyé',
+        'contratId': contratRef.id,
+      });
+  }else if(contratData['demandeLocationId'] != null){
+    await _firestore.collection('demandes_logement')
+      .doc(contratData['demandeId'])
       .update({
         'statut': 'Contrat envoyé',
         'contratId': contratRef.id,

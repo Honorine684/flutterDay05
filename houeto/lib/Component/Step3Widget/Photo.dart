@@ -22,25 +22,42 @@ class Photo extends StatefulWidget {
 }
 
 class PhotoState extends State<Photo> {
+  
   late final List<File?> images;
   late final List<String?> base64Images;
+Future<File?> decodeBase64Image(String base64String, int index) async {
+  try {
+    final bytes = base64Decode(base64String);
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/image_$index.jpg');
+    await file.writeAsBytes(bytes);
+    return file;
+  } catch (e) {
+    print('Erreur de décodage image: $e');
+    return null;
+  }
+}  
+@override
+void initState() {
+  super.initState();
+  images = List.filled(4, null);
+  base64Images = List.filled(4, null);
   
-  @override
-  void initState() {
-    super.initState();
-    // Initialisation avec 4 slots
-    images = List.filled(4, null);
-    base64Images = List.filled(4, null);
-    
-    // Chargement des images initiales si fournies
-    if (widget.initialPhotos != null) {
-      for (int i = 0; i < widget.initialPhotos!.length && i < 4; i++) {
-        if (widget.initialPhotos![i] != null) {
-          base64Images[i] = widget.initialPhotos![i];
-        }
+  if (widget.initialPhotos != null) {
+    for (int i = 0; i < widget.initialPhotos!.length && i < 4; i++) {
+      if (widget.initialPhotos![i] != null) {
+        base64Images[i] = widget.initialPhotos![i];
+        decodeBase64Image(widget.initialPhotos![i]!, i).then((file) {
+          if (mounted && file != null) {
+            setState(() {
+              images[i] = file;
+            });
+          }
+        });
       }
     }
   }
+}
 
 Future<File?> compressImage(File file) async {
   try {
@@ -76,66 +93,66 @@ Future<File?> compressVideo(File file) async {
   }
 }
 
-Future pickMedia(int index) async {
-  final ImagePicker picker = ImagePicker();
-  XFile? pickedFile;
+Future<void> pickMedia(int index) async {
+  try {
+    final ImagePicker picker = ImagePicker();
+    XFile? pickedFile;
 
-  if (index == 3) {
-    // Sélectionner une vidéo
-    pickedFile = await picker.pickVideo(source: ImageSource.gallery);
-  } else {
-    // Sélectionner une image
-    pickedFile = await picker.pickImage(source: ImageSource.gallery);
-  }
-
-  if (pickedFile == null) return;
-
-  File selectedFile = File(pickedFile.path);
-
-  if (index == 3) {
-    // Compression de la vidéo
-    final compressedFile = await compressVideo(selectedFile);
-    if (compressedFile != null) {
-      selectedFile = compressedFile;
+    if (index == 3) {
+      pickedFile = await picker.pickVideo(source: ImageSource.gallery);
+    } else {
+      pickedFile = await picker.pickImage(source: ImageSource.gallery);
     }
-  } else {
-    // Compression de l'image
-    final compressedFile = await compressImage(selectedFile);
-    if (compressedFile != null) {
-      selectedFile = compressedFile;
-    }
-  }
 
-  // Vérification de la taille après compression
-  final fileSize = await selectedFile.length();
-  if (fileSize > 5 * 1024 * 1024) { // Limite de 5 Mo pour la vidéo
+    if (pickedFile == null || !mounted) return;
+
+    File selectedFile = File(pickedFile.path);
+    File? processedFile;
+
+    if (index == 3) {
+      processedFile = await compressVideo(selectedFile);
+    } else {
+      processedFile = await compressImage(selectedFile);
+    }
+
+    // Utiliser le fichier compressé si disponible, sinon l'original
+    final fileToUse = processedFile ?? selectedFile;
+    final fileSize = await fileToUse.length();
+
+    if (fileSize > 5 * 1024 * 1024) {
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Fichier trop volumineux'),
+          content: const Text('Le fichier dépasse la limite autorisée (5 Mo).'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final bytes = await fileToUse.readAsBytes();
+    final base64 = base64Encode(bytes);
+
     if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Fichier trop volumineux'),
-        content: const Text('Le fichier dépasse la limite autorisée (5 Mo).'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Réessayer'),
-          ),
-        ],
-      ),
+    setState(() {
+      images[index] = fileToUse;
+      base64Images[index] = base64;
+    });
+
+    widget.onPhotosChanged(base64Images);
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Erreur lors de la sélection: ${e.toString()}')),
     );
-    return;
   }
-
-  final bytes = await selectedFile.readAsBytes();
-  final base64 = base64Encode(bytes);
-
-  if (!mounted) return;
-  setState(() {
-    images[index] = selectedFile;
-    base64Images[index] = base64;
-  });
-
-  widget.onPhotosChanged(base64Images);
 }
 
   
@@ -163,15 +180,16 @@ Future pickMedia(int index) async {
             fit: StackFit.expand,
             children: [
               index == 3
-                  ? Center(
-                      child: Icon(Icons.videocam, size: 40, color: Colors.red),
-                    ) // Icône pour vidéo
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        images[index]!,
-                        fit: BoxFit.cover,
-                      ),
+                  ? Center(child: Icon(Icons.videocam, size: 40, color: Colors.red))
+                  : (images[index] != null 
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            images[index]!,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Container() // Fallback si image est null
                     ),
               Positioned(
                 top: 5,

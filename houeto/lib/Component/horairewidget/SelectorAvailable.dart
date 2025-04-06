@@ -4,9 +4,11 @@ import 'package:houeto/JsonModels/JourDisponibilite.dart';
 
 class Selectoravailable extends StatefulWidget {
   final Function(List<Jourdisponibilite>) onDaychanged;
+  final List<Jourdisponibilite> initialAvailability; 
   const Selectoravailable({
     super.key,
     required this.onDaychanged,
+    this.initialAvailability =  const[]
   });
 
   @override
@@ -16,16 +18,28 @@ class Selectoravailable extends StatefulWidget {
 }
 
 class SelectoravailableState extends State<Selectoravailable> {
-  final List<Jourdisponibilite> disponibilites = [
-    Jourdisponibilite(day: 'Lundi', creneaux: []),
-    Jourdisponibilite(day: 'Mardi', creneaux: []),
-    Jourdisponibilite(day: 'Mercredi', creneaux: []),
-    Jourdisponibilite(day: 'Jeudi', creneaux: []),
-    Jourdisponibilite(day: 'Vendredi', creneaux: []),
-    Jourdisponibilite(day: 'Samedi', creneaux: []),
-    Jourdisponibilite(day: 'Dimanche', creneaux: [])
-  ];
+   late List<Jourdisponibilite> disponibilites;
 
+  @override
+  void initState() {
+    super.initState();
+    
+    // Utiliser les disponibilités initiales si elles existent
+    if (widget.initialAvailability.isNotEmpty) {
+      disponibilites = widget.initialAvailability;
+    } else {
+      // Sinon, utiliser les jours par défaut
+      disponibilites = [
+        Jourdisponibilite(day: 'Lundi', creneaux: []),
+        Jourdisponibilite(day: 'Mardi', creneaux: []),
+        Jourdisponibilite(day: 'Mercredi', creneaux: []),
+        Jourdisponibilite(day: 'Jeudi', creneaux: []),
+        Jourdisponibilite(day: 'Vendredi', creneaux: []),
+        Jourdisponibilite(day: 'Samedi', creneaux: []),
+        Jourdisponibilite(day: 'Dimanche', creneaux: [])
+      ];
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Card(

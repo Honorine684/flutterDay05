@@ -22,12 +22,13 @@ class Step6State extends State<Step6> {
   void initState() {
     super.initState();
     // Initialisation avec les valeurs par défaut ou celles fournies
-    photoPaths = [
+        photoPaths = [
       widget.initialData?['photo1'],
       widget.initialData?['photo2'],
       widget.initialData?['photo3'],
       widget.initialData?['photo4'],
-    ];
+    ].whereType<String>().toList(); 
+  
   }
 
   @override

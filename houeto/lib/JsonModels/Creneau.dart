@@ -25,4 +25,30 @@ class Creneau {
       'endMinute': end.minute,
     };
   }
+factory Creneau.fromJson(Map<String, dynamic> json) {
+  return Creneau(
+    start: TimeOfDay(
+      hour: (json['start']?['hour'] as int?) ?? 9, // Valeur par défaut 9h
+      minute: (json['start']?['minute'] as int?) ?? 0,
+    ),
+    end: TimeOfDay(
+      hour: (json['end']?['hour'] as int?) ?? 17, // Valeur par défaut 17h
+      minute: (json['end']?['minute'] as int?) ?? 0,
+    ),
+  );
+}
+
+
+  Map<String, dynamic> toJson() {
+    return {
+      'start': {
+        'hour': start.hour,
+        'minute': start.minute,
+      },
+      'end': {
+        'hour': end.hour,
+        'minute': end.minute,
+      },
+    };
+  }
 }

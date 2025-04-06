@@ -29,21 +29,23 @@ class MapsState extends State<Stepdumaps> {
   List<Map<String, dynamic>> nearbyPlaces = [];
   double _zoomLevel = 15;
   Timer? _debounceTimer;
-  final MapController _mapController = MapController();
+  late final MapController _mapController;
+  bool _mapInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialisation avec les valeurs par défaut ou celles fournies
+    _mapController = MapController();
     latitude = widget.initialData?['latitude'] ?? 6.3676953;
     longitude = widget.initialData?['longitude'] ?? 2.4252507;
     locationAddress = widget.initialData?['adresse'] ?? "Cliquer ici pour choisir une adresse";
-    
-    if (widget.initialData != null && widget.initialData!['latitude'] != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _mapController.move(LatLng(latitude, longitude), _zoomLevel);
-      });
-    }
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -55,7 +57,7 @@ class MapsState extends State<Stepdumaps> {
         longitude = widget.initialData?['longitude'] ?? 2.4252507;
         locationAddress = widget.initialData?['adresse'] ?? "Cliquer ici pour choisir une adresse";
       });
-      if (widget.initialData != null && widget.initialData!['latitude'] != null) {
+      if (_mapInitialized && widget.initialData != null && widget.initialData!['latitude'] != null) {
         _mapController.move(LatLng(latitude, longitude), _zoomLevel);
       }
     }
@@ -196,7 +198,7 @@ class MapsState extends State<Stepdumaps> {
     }
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return TextFormField(
       readOnly: true,
@@ -204,15 +206,11 @@ class MapsState extends State<Stepdumaps> {
         labelText: locationAddress,
         labelStyle: const TextStyle(color: Colors.blue),
         suffixIcon: IconButton(
-          onPressed: () {
-            showModal(context);
-          },
+          onPressed: () => showModal(context),
           icon: const Icon(Icons.location_pin, color: Colors.red),
         ),
       ),
-      onTap: () {
-        showModal(context);
-      },
+      onTap: () => showModal(context),
     );
   }
 
@@ -251,6 +249,12 @@ class MapsState extends State<Stepdumaps> {
                           options: MapOptions(
                             initialCenter: LatLng(latitude, longitude),
                             initialZoom: _zoomLevel,
+                            onMapReady: () {
+                              _mapInitialized = true;
+                              if (widget.initialData != null && widget.initialData!['latitude'] != null) {
+                                _mapController.move(LatLng(latitude, longitude), _zoomLevel);
+                              }
+                            },
                             onTap: (tapPosition, tapPoint) async {
                               setModalState(() {
                                 latitude = tapPoint.latitude;
@@ -271,13 +275,10 @@ class MapsState extends State<Stepdumaps> {
                                     searchController.text = address;
                                   });
 
-                                  if (_debounceTimer?.isActive ?? false) {
-                                    _debounceTimer!.cancel();
-                                  }
+                                  _debounceTimer?.cancel();
                                   _debounceTimer = Timer(
-                                    const Duration(milliseconds: 500), () {
-                                      getNearbyPlaces();
-                                    }
+                                    const Duration(milliseconds: 500), 
+                                    () => getNearbyPlaces()
                                   );
                                 } else {
                                   setModalState(() {
