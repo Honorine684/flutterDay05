@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class NotificationVisite {
   final String id;
-  final String senderId;
+  final String? senderId;
   final String receiverId;
   final String title;
   final String body;
@@ -75,9 +75,6 @@ class NotificationServiceVisite {
     try {
       // Récupérer l'ID de l'utilisateur actuel
       String? currentUserId = _auth.currentUser?.uid;
-      if (currentUserId == null) {
-        throw Exception("Utilisateur non connecté");
-      }
 
       // Créer la notification dans Firestore
       DocumentReference notificationRef = _firestore.collection('visiteNotification').doc();

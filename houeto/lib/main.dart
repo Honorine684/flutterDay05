@@ -47,12 +47,15 @@ Future<void> main() async {
       },
     ),
     debugShowCheckedModeBanner: false,
+    
     theme: ThemeData(
       scaffoldBackgroundColor: Colors.white,
-      primaryColor:Color(0xffF6CFF3),
+      primaryColor:Color(0xFF2A3647),
+      visualDensity: VisualDensity.adaptivePlatformDensity,
     
       colorScheme: ColorScheme.light(
      primary: Colors.blue, 
+     
      
     ),
   )));

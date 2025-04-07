@@ -90,14 +90,14 @@ class _BottombarState extends State<Bottombar> {
                 child: GestureDetector(
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context)=>  DemandesLocationFiltre()));
-                    //_navigateToPage(1); 
                   },
                   child: Container(
                     height: 60,
                     width: 60,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.blueAccent, Colors.lightBlue],
+                        colors: [Colors.blueAccent, Color(0xFF2A3647)],
+                        
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),

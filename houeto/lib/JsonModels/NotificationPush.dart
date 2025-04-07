@@ -4,7 +4,7 @@ import 'package:houeto/Services/Firebase/push_notifications.dart';
 
 class NotificationModel {
   final String id;
-  final String senderId;
+  final String? senderId;
   final String receiverId;
   final String title;
   final String body;
@@ -66,9 +66,6 @@ class NotificationService {
     try {
       // Récupérer l'ID de l'utilisateur actuel
       String? currentUserId = _auth.currentUser?.uid;
-      if (currentUserId == null) {
-        throw Exception("Utilisateur non connecté");
-      }
 
       // Créer la notification dans Firestore
       DocumentReference notificationRef = _firestore.collection('notifications').doc();

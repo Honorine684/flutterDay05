@@ -148,18 +148,16 @@ class Auth {
       await _firebaseMessaging.requestPermission();
       String? newToken = await _firebaseMessaging.getToken();
 
-      if (newToken != null) {
-        DocumentSnapshot userDoc = await firestore.collection('users').doc(userId).get();
-        String? oldToken = userDoc.exists ? (userDoc.data() as Map<String, dynamic>)['fcmToken'] : null;
+      DocumentSnapshot userDoc = await firestore.collection('users').doc(userId).get();
+      String? oldToken = userDoc.exists ? (userDoc.data() as Map<String, dynamic>)['fcmToken'] : null;
 
-        if (oldToken != newToken) {
-          await firestore.collection('users').doc(userId).set({'fcmToken': newToken}, SetOptions(merge: true));
-          print("FCM Token mis à jour pour $userId");
-        } else {
-          print("⚠️ FCM Token inchangé pour $userId");
-        }
+      if (oldToken != newToken) {
+        await firestore.collection('users').doc(userId).set({'fcmToken': newToken}, SetOptions(merge: true));
+        print("FCM Token mis à jour pour $userId");
+      } else {
+        print("⚠️ FCM Token inchangé pour $userId");
       }
-    } catch (e) {
+        } catch (e) {
       print( "Erreur mise à jour FCM Token: $e");
     }
   }

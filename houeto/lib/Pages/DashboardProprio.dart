@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:houeto/Pages/AddLogement.dart';
+import 'package:houeto/Pages/GestionContrat.dart';
 import 'package:houeto/Pages/NotificationsPage.dart';
 import 'package:houeto/Pages/PageBienConfierAVous.dart';
 import 'package:houeto/Pages/PageDemandeLocation.dart';
@@ -171,7 +172,9 @@ class _ProprioDashboardState extends State<ProprioDashboard> {
         'icon': Icons.assignment,
         'title': 'Contrats',
         'color': Colors.green,
-        'onTap': () {/* Navigation vers contrats */},
+        'onTap': () {
+          Navigator.push(context, MaterialPageRoute(builder: (context)=> const Gestioncontrat()));
+        },
       },
       {
         'icon': Icons.payment,

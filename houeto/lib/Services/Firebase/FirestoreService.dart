@@ -4,6 +4,8 @@ import 'package:houeto/JsonModels/JourDisponibilite.dart';
 class FirestoreService {
   final CollectionReference logement = FirebaseFirestore.instance.collection("logement");
   final CollectionReference visites = FirebaseFirestore.instance.collection("visites");
+  final CollectionReference contrats = FirebaseFirestore.instance.collection("contrats");
+
 
 
   Future<DocumentReference<Object?>> addLogement(
@@ -304,7 +306,6 @@ Stream<QuerySnapshot> recupeLogementNonConfieAuGestionnaire(String userId){
       });
 }
 
- // getJoursDisponibles(String logementId) {}
 Future<DocumentSnapshot?> getLogementById(String logementId) async {
   try {
     final doc = await FirebaseFirestore.instance
@@ -328,9 +329,55 @@ Future<QuerySnapshot> getJoursDisponibles(String logementId) async {
         .get();
   } catch (e) {
     print("Erreur dans getJoursDisponibles: $e");
-    throw e;
+    rethrow;
   }
 }
+Stream<QuerySnapshot> getContratActif(String userId) {
+  print("Recherche des contrats actifs pour userId: $userId");
+  
+  final logementsRef = FirebaseFirestore.instance.collection('logement');
+  
+  return logementsRef
+      .where('proprietaireId', isEqualTo: userId)
+      .snapshots()
+      .asyncMap((logementsSnapshot) async {
+        print("Logements trouvés: ${logementsSnapshot.docs.length}");
+        
+        // Afficher les IDs des logements trouvés pour débogage
+        List<String> logementIds = logementsSnapshot.docs.map((doc) {
+          print("Logement trouvé: ${doc.id}");
+          return doc.id;
+        }).toList();
+        
+        if (logementIds.isEmpty) {
+          print("Aucun logement trouvé pour ce propriétaire");
+          return await FirebaseFirestore.instance.collection('contrats')
+              .limit(0)
+              .get();
+        }
+        
+        print("Recherche de contrats avec logementId dans: $logementIds");
+        
+        if (logementIds.length > 10) {
+          print("Plus de 10 logements, limitation à 10 pour whereIn");
+          logementIds = logementIds.sublist(0, 10);
+        }
+        
+        final contratsQuery = FirebaseFirestore.instance.collection('contrats')
+            .where('etat', isEqualTo: 'actif')
+            .where('logementId', whereIn: logementIds);
+            
+        QuerySnapshot result = await contratsQuery.get();
+        print("Contrats actifs trouvés: ${result.docs.length}");
+        
+        for (var doc in result.docs) {
+          print("Contrat trouvé: ${doc.id}, logementId: ${(doc.data() as Map)['logementId']}");
+        }
+        
+        return result;
+      });
+}
+
 }
   
   

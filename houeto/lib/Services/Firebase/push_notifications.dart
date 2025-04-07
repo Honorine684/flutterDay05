@@ -58,13 +58,9 @@ class PushNotification {
   // Récupération du token FCM
   void _getFCMToken() async {
     String? token = await FirebaseMessaging.instance.getToken();
-    if (token != null) {
-      fcmToken = token;
-      print("Token FCM : $token");
-    } else {
-      print("Impossible de récupérer le token !");
+    fcmToken = token;
+    print("Token FCM : $token");
     }
-  }
 
   void _initFirebaseListeners() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -194,7 +190,7 @@ void _handleNotificationClick(RemoteMessage message) {
   }) async {
     String? token = await Auth().getUserFCMToken(receiverId);
 
-if (token == null || token.isEmpty) {
+if (token!.isEmpty) {
 
   await storeNotificationForLater(receiverId, title, body, payload);
   print("Utilisateur non connecté, notification stockée pour plus tard");
@@ -230,16 +226,13 @@ if (token == null || token.isEmpty) {
   }
     Future<void> updateUserFCMToken() async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
 
     String? token = await FirebaseMessaging.instance.getToken();
-    if (token != null) {
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'fcmToken': token,
-      });
-      print("FCM Token mis à jour : $token");
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'fcmToken': token,
+    });
+    print("FCM Token mis à jour : $token");
     }
-  }
   Future<void> storeNotificationForLater(
   String userId,
   String title,
@@ -259,7 +252,6 @@ if (token == null || token.isEmpty) {
 }
 Future<void> checkPendingNotifications() async {
   String? userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return;
 
   QuerySnapshot pendingNotifications = await FirebaseFirestore.instance
       .collection('pendingNotifications')

@@ -60,12 +60,11 @@ class EditlogementState extends State<Editlogement> {
     logementData.addAll(data);
   }
   bool _minDelayElapsed = false;
-  //bool _authChecked = false;
   List<Step> steps = [];
   @override
   void initState() {
     super.initState();
-    steps = []; // Initialisation vide temporaire
+    steps = []; 
     loadInitialData();
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {

@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
 
 class DemandesLocationFiltre extends StatefulWidget {
   const DemandesLocationFiltre({super.key});
@@ -8,14 +10,9 @@ class DemandesLocationFiltre extends StatefulWidget {
   DemandesLocationFiltreState createState() => DemandesLocationFiltreState();
 }
 
-class DemandesLocationFiltreState extends State<DemandesLocationFiltre>
-    with SingleTickerProviderStateMixin {
+class DemandesLocationFiltreState extends State<DemandesLocationFiltre> {
   int _currentCardIndex = 0;
   final PageController _pageController = PageController();
-  
-  // Ajout du TabController
-  late TabController _tabController;
-  
 
   final List<Map<String, dynamic>> _demandesNonEligibles = [
     {'id': '1', 'nom': 'Jean Dupont', 'statut': 'Étudiant', 'photo': 'https://randomuser.me/api/portraits/men/1.jpg', 'revenu': '600€/mois', 'motif': 'Revenus insuffisants'},
@@ -25,29 +22,17 @@ class DemandesLocationFiltreState extends State<DemandesLocationFiltre>
     {'id': '5', 'nom': 'Lucas Leroy', 'statut': 'Stage', 'photo': 'https://randomuser.me/api/portraits/men/5.jpg', 'revenu': '700€/mois', 'motif': 'Revenus insuffisants'},
   ];
 
-  final List<Map<String, dynamic>> _demandesEligibles = [
-    {'id': '6', 'nom': 'Sophie Lambert', 'statut': 'Fonctionnaire', 'photo': 'https://randomuser.me/api/portraits/women/2.jpg', 'status': 'en_attente', 'revenu': '2200€/mois'},
-    {'id': '7', 'nom': 'Lucie Petit', 'statut': 'CDI', 'photo': 'https://randomuser.me/api/portraits/women/3.jpg', 'status': 'confirme', 'revenu': '2500€/mois'},
-  ];
 
   // Filtres
   String _statutFilter = 'Tous';
   String _revenuFilter = 'Tous';
+  bool iaFilterEnabled = false;
   final List<String> _statutOptions = ['Tous', 'Étudiant', 'CDI', 'CDD', 'Auto-entrepreneur', 'Intérimaire'];
   final List<String> _revenuOptions = ['Tous', 'Moins de 1000€', '1000€-2000€', 'Plus de 2000€'];
 
   @override
-  void initState() {
-    super.initState();
-    
-    // Initialisation du TabController avec 3 onglets
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
   void dispose() {
     _pageController.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -55,7 +40,7 @@ class DemandesLocationFiltreState extends State<DemandesLocationFiltre>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Demandes de Location'),
+        title: Text('Filtre demandes'),
         actions: [
           IconButton(
             icon: Icon(Icons.filter_list),
@@ -83,20 +68,32 @@ class DemandesLocationFiltreState extends State<DemandesLocationFiltre>
               ],
             ),
           ),
-          // Section des cartes en 3D
           Expanded(
-            flex: 2,
             child: _build3DCardStack(),
           ),
-          // Section tabbar (éligibles)
-          Expanded(
-            flex: 1,
-            child: _buildTabBarSection(),
-          ),
+          Padding(
+  padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Text("IA pour filtrage: "),
+      Switch(
+        value: iaFilterEnabled,
+        onChanged: (value) {
+          setState(() {
+            iaFilterEnabled = value;
+          });
+        },
+        activeColor: Theme.of(context).primaryColor,
+      ),
+    ],
+  ),
+),
         ],
       ),
     );
   }
+  
 
   void _showFilterDialog() {
     showModalBottomSheet(
@@ -234,240 +231,346 @@ class DemandesLocationFiltreState extends State<DemandesLocationFiltre>
     );
   }
 
-  Widget _build3DCardStack() {
-    return Stack(
-      children: [
-        // Pile de cartes avec effet 3D
-        Positioned.fill(
-          child: GestureDetector(
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity != null) {
-                if (details.primaryVelocity! < 0 && _currentCardIndex < _demandesNonEligibles.length - 1) {
-                  // Swipe gauche -> carte suivante
-                  setState(() {
-                    _currentCardIndex++;
-                  });
-                } else if (details.primaryVelocity! > 0 && _currentCardIndex > 0) {
-                  // Swipe droite -> carte précédente
-                  setState(() {
-                    _currentCardIndex--;
-                  });
+Widget _build3DCardStack() {
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('demandes_logement')
+        .where('statut', isEqualTo: 'En attente')
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return Center(child: CircularProgressIndicator());
+      }
+
+      final demandes = snapshot.data!.docs;
+      if (demandes.isEmpty) {
+        return Center(child: Text("Aucune demande en attente"));
+      }
+
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity != null) {
+                  if (details.primaryVelocity! < 0 && _currentCardIndex < demandes.length - 1) {
+                    setState(() => _currentCardIndex++);
+                  } else if (details.primaryVelocity! > 0 && _currentCardIndex > 0) {
+                    setState(() => _currentCardIndex--);
+                  }
                 }
-              }
-            },
-            child: Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Construction des cartes empilées avec effet 3D
-                  // Nous affichons jusqu'à 3 cartes en arrière-plan
-                  for (int i = math.min(_currentCardIndex + 3, _demandesNonEligibles.length - 1); 
-                       i >= _currentCardIndex; 
-                       i--)
-                    Positioned(
-                      child: Transform(
-                        transform: Matrix4.identity()
-                          ..setEntry(3, 2, 0.001) // Effet de perspective
-                          ..translate(0.0, (i - _currentCardIndex) * 15.0, -(i - _currentCardIndex) * 10.0)
-                          ..scale(1.0 - (i - _currentCardIndex) * 0.05), // Réduction de taille pour les cartes du fond
-                        alignment: Alignment.topCenter,
-                        child: Opacity(
-                          opacity: 1.0 - (i - _currentCardIndex) * 0.2, // Opacité réduite pour les cartes du fond
-                          child: _buildLocationCard(_demandesNonEligibles[i], i == _currentCardIndex),
+              },
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    for (int i = math.min(_currentCardIndex + 2, demandes.length - 1);
+                         i >= _currentCardIndex;
+                         i--)
+                      Positioned(
+                        child: Transform(
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..translate(0.0, (i - _currentCardIndex) * 15.0, 
+                                       -(i - _currentCardIndex) * 10.0)
+                            ..scale(1.0 - (i - _currentCardIndex) * 0.05),
+                          alignment: Alignment.topCenter,
+                          child: Opacity(
+                            opacity: 1.0 - (i - _currentCardIndex) * 0.3,
+                            child: _buildLocationCard(
+                              demandes[i], 
+                              i == _currentCardIndex
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        
-        // Boutons de navigation sur les côtés
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          child: _currentCardIndex > 0
-              ? Center(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _currentCardIndex--;
-                        });
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.chevron_left, color: Theme.of(context).primaryColor),
-                      ),
+          
+          // Boutons de navigation
+          if (demandes.length > 1) ...[
+            Positioned(
+              left: 10,
+              top: 0,
+              bottom: 0,
+              child: _currentCardIndex > 0
+                  ? IconButton(
+                      icon: Icon(Icons.chevron_left, size: 40),
+                      onPressed: () => setState(() => _currentCardIndex--),
+                    )
+                  : SizedBox(),
+            ),
+            Positioned(
+              right: 10,
+              top: 0,
+              bottom: 0,
+              child: _currentCardIndex < demandes.length - 1
+                  ? IconButton(
+                      icon: Icon(Icons.chevron_right, size: 40),
+                      onPressed: () => setState(() => _currentCardIndex++),
+                    )
+                  : SizedBox(),
+            ),
+          ],
+          
+          // Indicateur de position
+          Positioned(
+            bottom: 20,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (int i = 0; i < demandes.length; i++)
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i == _currentCardIndex 
+                          ? Colors.blue 
+                          : Colors.grey,
                     ),
                   ),
-                )
-              : SizedBox(),
-        ),
-        
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          child: _currentCardIndex < _demandesNonEligibles.length - 1
-              ? Center(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _currentCardIndex++;
-                        });
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.chevron_right, color: Theme.of(context).primaryColor),
-                      ),
-                    ),
-                  ),
-                )
-              : SizedBox(),
-        ),
-      ],
-    );
-  }
+              ],
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+Widget _buildLocationCard(DocumentSnapshot demandeDoc, bool isCurrent) {
+  // Vérification null-safe du document
+ /* if (!demandeDoc.exists) {
+    return _buildErrorCard("Demande introuvable");
+  }*/
 
-  Widget _buildLocationCard(Map<String, dynamic> demande, bool isCurrent) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.85,
-      height: 280,
-      child: Card(
-        elevation: isCurrent ? 8 : 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // En-tête de la carte avec le profil
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundImage: NetworkImage(demande['photo']),
-                    radius: 30,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          demande['nom'],
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          demande['statut'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          demande['revenu'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+  final demande = demandeDoc.data() as Map<String, dynamic>? ?? {};
+
+  return FutureBuilder<Map<String, dynamic>>(
+    future: _getLocataireInfo(demande['locataire_id']?.toString() ?? ''),
+    builder: (context, snapshot) {
+      // Gestion des états du FutureBuilder
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return _buildLoadingCard();
+      }
+
+      /*if (snapshot.hasError || !snapshot.hasData) {
+        return _buildErrorCard("Erreur de chargement");
+      }*/
+
+      final locataire = snapshot.data!;
+      
+      // Données par défaut sécurisées
+      final prenom = locataire['prenom']?.toString() ?? 'Prénom inconnu';
+      final nom = locataire['nom']?.toString() ?? '';
+      final profession = locataire['profession']?.toString() ?? 'Non spécifié';
+      final photoUrl = locataire['photoUrl']?.toString();
+
+      return SizedBox(
+        width: MediaQuery.of(context).size.width * 0.85,
+        height: 340,
+        child: Card(
+          elevation: isCurrent ? 8 : 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // En-tête sécurisée
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                      child: photoUrl == null 
+                          ? Text("${prenom.isNotEmpty ? prenom[0] : ''}${nom.isNotEmpty ? nom[0] : ''}")
+                          : null,
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.info_outline, color: Colors.blue),
-                    onPressed: () {
-                      // Afficher plus d'informations
-                      _showProfileDetails(demande);
-                    },
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "$prenom $nom",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Profession: $profession",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          if (demande['telephone']?.toString() != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              "Tél: ${demande['telephone']}",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Section Statut sécurisée
+                if (demande['statut']?.toString() != null) ...[
+                  const SizedBox(height: 16),
+                  _buildStatusSection(demande['statut'].toString()),
+                ],
+                
+                // Actions seulement si la demande est en attente
+                if (isCurrent && demande['statut']?.toString() == 'En attente') ...[
+                  const Spacer(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildActionButton(
+                        Icons.check,
+                        "Accepter",
+                        Colors.green,
+                        () => _traiterDemande(demandeDoc, true),
+                      ),
+                      _buildActionButton(
+                        Icons.close,
+                        "Refuser",
+                        Colors.red,
+                        () => _traiterDemande(demandeDoc, false),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-              
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Non éligible",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Motif: ${demande['motif']}",
-                      style: TextStyle(color: Colors.red[800]),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Actions en bas de la carte
-              if (isCurrent) ...[
-                Spacer(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildActionButton(
-                      Icons.schedule,
-                      "Mettre de côté",
-                      Colors.orange,
-                      () => _mettreDeCote(demande),
-                    ),
-                    _buildActionButton(
-                      Icons.delete_outline,
-                      "Supprimer",
-                      Colors.red,
-                      () {
-                        _rejeterDemande(demande);
-                        if (_demandesNonEligibles.length > 1) {
-                          setState(() {
-                            _demandesNonEligibles.removeAt(_currentCardIndex);
-                            if (_currentCardIndex >= _demandesNonEligibles.length) {
-                              _currentCardIndex = _demandesNonEligibles.length - 1;
-                            }
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
               ],
-            ],
+            ),
           ),
         ),
-      ),
+      );
+    },
+  );
+}
+
+// Méthodes utilitaires sécurisées
+Widget _buildStatusSection(String status) {
+  Color color;
+  String text;
+  
+  switch(status) {
+    case 'Confirmer':
+      color = Colors.green;
+      text = 'Confirmée';
+      break;
+    case 'En attente':
+      color = Colors.orange;
+      text = 'En attente';
+      break;
+    case 'Refuser':
+      color = Colors.red;
+      text = 'Refusée';
+      break;
+    default:
+      color = Colors.grey;
+      text = status;
+  }
+
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: color.withOpacity(0.3)),
+    ),
+    child: Row(
+      children: [
+        Icon(_getStatusIcon(status), color: color),
+        const SizedBox(width: 8),
+        Text(
+          "Statut: $text",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+IconData _getStatusIcon(String status) {
+  switch(status) {
+    case 'Confirmer': return Icons.check_circle;
+    case 'En attente': return Icons.access_time;
+    case 'Refuser': return Icons.cancel;
+    default: return Icons.help_outline;
+  }
+}
+
+
+
+Widget _buildLoadingCard() {
+  return Card(
+    child: Padding(
+      padding: EdgeInsets.all(20),
+      child: Center(child: CircularProgressIndicator()),
+    ),
+  );
+}
+
+Widget _buildErrorCard() {
+  return Card(
+    child: Padding(
+      padding: EdgeInsets.all(20),
+      child: Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red))),
+    ),
+  );
+}
+
+Future<Map<String, dynamic>> _getLocataireInfo(String locataireId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('locataires')
+        .doc(locataireId)
+        .get();
+    return doc.data() ?? {};
+  } catch (e) {
+    print("Erreur: $e");
+    return {};
+  }
+}
+
+void _traiterDemande(DocumentSnapshot demandeDoc, bool accepte) async {
+  try {
+    await FirebaseFirestore.instance
+        .collection('demandes_logement')
+        .doc(demandeDoc.id)
+        .update({
+          'statut': accepte ? 'Confirmer' : 'Refuser',
+        });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Demande ${accepte ? 'acceptée' : 'refusée'}")),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Erreur: ${e.toString()}")),
     );
   }
+}
 
   void _showProfileDetails(Map<String, dynamic> demande) {
     showDialog(
@@ -526,74 +629,7 @@ class DemandesLocationFiltreState extends State<DemandesLocationFiltre>
     );
   }
 
-  Widget _buildTabBarSection() {
-    return Column(
-      children: [
-        // Utilisation du TabController
-        TabBar(
-          controller: _tabController,
-          labelColor: Theme.of(context).primaryColor,
-          unselectedLabelColor: Colors.grey,
-          tabs: [
-            Tab(text: 'En attente'),
-            Tab(text: 'Confirmées'),
-            Tab(text: 'Annulées'),
-          ],
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildDemandeList(_demandesEligibles.where((d) => d['status'] == 'en_attente').toList()),
-              _buildDemandeList(_demandesEligibles.where((d) => d['status'] == 'confirme').toList()),
-              _buildDemandeList([]), // Liste vide pour les demandes annulées
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDemandeList(List<Map<String, dynamic>> demandes) {
-    return ListView.builder(
-      itemCount: demandes.length,
-      itemBuilder: (context, index) {
-        final demande = demandes[index];
-        return Card(
-          margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-          child: ListTile(
-            leading: CircleAvatar(backgroundImage: NetworkImage(demande['photo'])),
-            title: Text(demande['nom']),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(demande['statut']),
-                Text(demande['revenu']),
-              ],
-            ),
-            isThreeLine: true,
-            trailing: _tabController.index == 0
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.check, color: Colors.green),
-                        onPressed: () => _confirmerDemande(demande),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.close, color: Colors.red),
-                        onPressed: () => _annulerDemande(demande),
-                      ),
-                    ],
-                  )
-                : null,
-          ),
-        );
-      },
-    );
-  }
-
-  void _rejeterDemande(Map<String, dynamic> demande) {
+ /* void _rejeterDemande(Map<String, dynamic> demande) {
     print("Demande rejetée: ${demande['nom']}");
     // Implémentez votre logique ici
   }
@@ -601,15 +637,5 @@ class DemandesLocationFiltreState extends State<DemandesLocationFiltre>
   void _mettreDeCote(Map<String, dynamic> demande) {
     print("Demande mise de côté: ${demande['nom']}");
     // Implémentez votre logique ici
-  }
-
-  void _confirmerDemande(Map<String, dynamic> demande) {
-    print("Demande confirmée: ${demande['nom']}");
-    // Implémentez votre logique ici
-  }
-
-  void _annulerDemande(Map<String, dynamic> demande) {
-    print("Demande annulée: ${demande['nom']}");
-    // Implémentez votre logique ici
-  }
+  }*/
 }
