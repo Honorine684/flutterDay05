@@ -236,19 +236,30 @@ Widget _build3DCardStack() {
     stream: FirebaseFirestore.instance
         .collection('demandes_logement')
         .where('statut', isEqualTo: 'En attente')
+        .orderBy('timestamp', descending: true)
         .snapshots(),
     builder: (context, snapshot) {
-      if (!snapshot.hasData) {
-        return Center(child: CircularProgressIndicator());
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
       }
 
-      final demandes = snapshot.data!.docs;
+      if (snapshot.hasError) {
+        return Center(child: Text("Erreur: ${snapshot.error}"));
+      }
+
+      final demandes = snapshot.data?.docs ?? [];
       if (demandes.isEmpty) {
-        return Center(child: Text("Aucune demande en attente"));
+        return const Center(child: Text("Aucune demande en attente"));
+      }
+
+      // S'assurer que _currentCardIndex est dans les limites
+      if (_currentCardIndex >= demandes.length) {
+        _currentCardIndex = demandes.length - 1;
       }
 
       return Stack(
         children: [
+          // La pile de cartes 3D
           Positioned.fill(
             child: GestureDetector(
               onHorizontalDragEnd: (details) {
@@ -264,22 +275,26 @@ Widget _build3DCardStack() {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
+                    // Générer les cartes en commençant par la plus éloignée
                     for (int i = math.min(_currentCardIndex + 2, demandes.length - 1);
                          i >= _currentCardIndex;
                          i--)
                       Positioned(
                         child: Transform(
                           transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.001)
-                            ..translate(0.0, (i - _currentCardIndex) * 15.0, 
-                                       -(i - _currentCardIndex) * 10.0)
-                            ..scale(1.0 - (i - _currentCardIndex) * 0.05),
+                            ..setEntry(3, 2, 0.001) // Perspective
+                            ..translate(
+                              0.0,
+                              (i - _currentCardIndex) * 15.0, // Translation verticale pour l'empilement
+                              -(i - _currentCardIndex) * 10.0, // Translation en profondeur
+                            )
+                            ..scale(1.0 - (i - _currentCardIndex) * 0.05), // Réduction de taille avec la profondeur
                           alignment: Alignment.topCenter,
                           child: Opacity(
-                            opacity: 1.0 - (i - _currentCardIndex) * 0.3,
+                            opacity: 1.0 - (i - _currentCardIndex) * 0.3, // Réduction d'opacité avec la profondeur
                             child: _buildLocationCard(
-                              demandes[i], 
-                              i == _currentCardIndex
+                              demandes[i],
+                              i == _currentCardIndex,
                             ),
                           ),
                         ),
@@ -290,33 +305,49 @@ Widget _build3DCardStack() {
             ),
           ),
           
-          // Boutons de navigation
-          if (demandes.length > 1) ...[
-            Positioned(
-              left: 10,
-              top: 0,
-              bottom: 0,
-              child: _currentCardIndex > 0
-                  ? IconButton(
-                      icon: Icon(Icons.chevron_left, size: 40),
+          // Boutons de navigation - bien visibles sur les côtés
+          Positioned(
+            left: 10,
+            top: 0,
+            bottom: 0,
+            child: _currentCardIndex > 0
+                ? Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.chevron_left, size: 30, color: Colors.white),
                       onPressed: () => setState(() => _currentCardIndex--),
-                    )
-                  : SizedBox(),
-            ),
-            Positioned(
-              right: 10,
-              top: 0,
-              bottom: 0,
-              child: _currentCardIndex < demandes.length - 1
-                  ? IconButton(
-                      icon: Icon(Icons.chevron_right, size: 40),
+                    ),
+                  )
+                : const SizedBox(),
+          ),
+          Positioned(
+            right: 10,
+            top: 0,
+            bottom: 0,
+            child: _currentCardIndex < demandes.length - 1
+                ? Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.chevron_right, size: 30, color: Colors.white),
                       onPressed: () => setState(() => _currentCardIndex++),
-                    )
-                  : SizedBox(),
-            ),
-          ],
+                    ),
+                  )
+                : const SizedBox(),
+          ),
           
-          // Indicateur de position
+          // Indicateur de position (dots)
           Positioned(
             bottom: 20,
             left: 0,
@@ -328,12 +359,10 @@ Widget _build3DCardStack() {
                   Container(
                     width: 8,
                     height: 8,
-                    margin: EdgeInsets.symmetric(horizontal: 4),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: i == _currentCardIndex 
-                          ? Colors.blue 
-                          : Colors.grey,
+                      color: i == _currentCardIndex ? Colors.blue : Colors.grey,
                     ),
                   ),
               ],
@@ -345,32 +374,31 @@ Widget _build3DCardStack() {
   );
 }
 Widget _buildLocationCard(DocumentSnapshot demandeDoc, bool isCurrent) {
-  // Vérification null-safe du document
- /* if (!demandeDoc.exists) {
+  if (!demandeDoc.exists) {
     return _buildErrorCard("Demande introuvable");
-  }*/
+  }
 
   final demande = demandeDoc.data() as Map<String, dynamic>? ?? {};
 
   return FutureBuilder<Map<String, dynamic>>(
-    future: _getLocataireInfo(demande['locataire_id']?.toString() ?? ''),
+    future: _getDemandeInfoWithTitle(demande),
     builder: (context, snapshot) {
-      // Gestion des états du FutureBuilder
       if (snapshot.connectionState == ConnectionState.waiting) {
         return _buildLoadingCard();
       }
 
-      /*if (snapshot.hasError || !snapshot.hasData) {
+      if (snapshot.hasError || !snapshot.hasData) {
         return _buildErrorCard("Erreur de chargement");
-      }*/
+      }
 
-      final locataire = snapshot.data!;
+      final demandeComplete = snapshot.data!;
       
       // Données par défaut sécurisées
-      final prenom = locataire['prenom']?.toString() ?? 'Prénom inconnu';
-      final nom = locataire['nom']?.toString() ?? '';
-      final profession = locataire['profession']?.toString() ?? 'Non spécifié';
-      final photoUrl = locataire['photoUrl']?.toString();
+      final prenom = demande['prenom']?.toString() ?? 'Prénom inconnu';
+      final nom = demande['nom']?.toString() ?? '';
+      final profession = demande['profession']?.toString() ?? 'Non spécifié';
+      final telephone = demande['telephone']?.toString() ?? 'Non spécifié';
+      final logementTitre = demandeComplete['logementTitre']?.toString() ?? 'Titre inconnu';
 
       return SizedBox(
         width: MediaQuery.of(context).size.width * 0.85,
@@ -383,15 +411,20 @@ Widget _buildLocationCard(DocumentSnapshot demandeDoc, bool isCurrent) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // En-tête sécurisée
+                // En-tête
                 Row(
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                      child: photoUrl == null 
-                          ? Text("${prenom.isNotEmpty ? prenom[0] : ''}${nom.isNotEmpty ? nom[0] : ''}")
-                          : null,
+                      backgroundColor: Colors.blue.shade200,
+                      child: Text(
+                        "${prenom.isNotEmpty ? prenom[0] : ''}${nom.isNotEmpty ? nom[0] : ''}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -413,29 +446,40 @@ Widget _buildLocationCard(DocumentSnapshot demandeDoc, bool isCurrent) {
                               color: Colors.grey[600],
                             ),
                           ),
-                          if (demande['telephone']?.toString() != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              "Tél: ${demande['telephone']}",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Tél: $telephone",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
                             ),
-                          ],
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
                 
-                // Section Statut sécurisée
-                if (demande['statut']?.toString() != null) ...[
-                  const SizedBox(height: 16),
-                  _buildStatusSection(demande['statut'].toString()),
-                ],
+                // Section Logement
+                const SizedBox(height: 16),
+                Text(
+                  "Logement demandé:",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  logementTitre,
+                  style: const TextStyle(
+                    fontSize: 15,
+                  ),
+                ),
                 
-                // Actions seulement si la demande est en attente
+                const SizedBox(height: 16),
+                _buildStatusSection(demande['statut']?.toString() ?? 'En attente'),
+                
                 if (isCurrent && demande['statut']?.toString() == 'En attente') ...[
                   const Spacer(),
                   Row(
@@ -464,46 +508,105 @@ Widget _buildLocationCard(DocumentSnapshot demandeDoc, bool isCurrent) {
     },
   );
 }
-
-// Méthodes utilitaires sécurisées
-Widget _buildStatusSection(String status) {
-  Color color;
-  String text;
+Future<Map<String, dynamic>> _getDemandeInfoWithTitle(Map<String, dynamic> demande) async {
+  final result = Map<String, dynamic>.from(demande);
   
-  switch(status) {
-    case 'Confirmer':
-      color = Colors.green;
-      text = 'Confirmée';
+  try {
+    if (demande['logement_id'] != null) {
+      DocumentSnapshot logementDoc = await FirebaseFirestore.instance
+          .collection('logement')
+          .doc(demande['logement_id'].toString())
+          .get();
+          
+      if (logementDoc.exists) {
+        final logementData = logementDoc.data() as Map<String, dynamic>? ?? {};
+        result['logementTitre'] = logementData['titre']?.toString() ?? 'Sans titre';
+      }
+    }
+    
+    return result;
+  } catch (e) {
+    print('Erreur lors de la récupération des données: $e');
+    return result;
+  }
+}
+Widget _buildLoadingCard() {
+  return SizedBox(
+    width: MediaQuery.of(context).size.width * 0.85,
+    height: 340,
+    child: Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: const Center(
+        child: CircularProgressIndicator(),
+      ),
+    ),
+  );
+}
+
+Widget _buildErrorCard(String message) {
+  return SizedBox(
+    width: MediaQuery.of(context).size.width * 0.85,
+    height: 340,
+    child: Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildStatusSection(String statut) {
+  Color statusColor;
+  IconData statusIcon;
+  
+  switch (statut) {
+    case 'Acceptée':
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+      break;
+    case 'Refusée':
+      statusColor = Colors.red;
+      statusIcon = Icons.cancel;
       break;
     case 'En attente':
-      color = Colors.orange;
-      text = 'En attente';
-      break;
-    case 'Refuser':
-      color = Colors.red;
-      text = 'Refusée';
-      break;
     default:
-      color = Colors.grey;
-      text = status;
+      statusColor = Colors.orange;
+      statusIcon = Icons.hourglass_empty;
+      break;
   }
-
+  
   return Container(
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
+      color: statusColor.withOpacity(0.1),
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: color.withOpacity(0.3)),
     ),
     child: Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(_getStatusIcon(status), color: color),
+        Icon(statusIcon, color: statusColor, size: 18),
         const SizedBox(width: 8),
         Text(
-          "Statut: $text",
+          "Statut: $statut",
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: color,
+            color: statusColor,
           ),
         ),
       ],
@@ -511,47 +614,23 @@ Widget _buildStatusSection(String status) {
   );
 }
 
-IconData _getStatusIcon(String status) {
-  switch(status) {
-    case 'Confirmer': return Icons.check_circle;
-    case 'En attente': return Icons.access_time;
-    case 'Refuser': return Icons.cancel;
-    default: return Icons.help_outline;
-  }
-}
-
-
-
-Widget _buildLoadingCard() {
-  return Card(
-    child: Padding(
-      padding: EdgeInsets.all(20),
-      child: Center(child: CircularProgressIndicator()),
+Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onPressed) {
+  return ElevatedButton.icon(
+    icon: Icon(icon, color: Colors.white),
+    label: Text(label, style: const TextStyle(color: Colors.white)),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: color,
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
     ),
+    onPressed: onPressed,
   );
 }
 
-Widget _buildErrorCard() {
-  return Card(
-    child: Padding(
-      padding: EdgeInsets.all(20),
-      child: Center(child: Text("Erreur de chargement", style: TextStyle(color: Colors.red))),
-    ),
-  );
-}
 
-Future<Map<String, dynamic>> _getLocataireInfo(String locataireId) async {
-  try {
-    final doc = await FirebaseFirestore.instance
-        .collection('locataires')
-        .doc(locataireId)
-        .get();
-    return doc.data() ?? {};
-  } catch (e) {
-    print("Erreur: $e");
-    return {};
-  }
-}
 
 void _traiterDemande(DocumentSnapshot demandeDoc, bool accepte) async {
   try {
@@ -572,70 +651,5 @@ void _traiterDemande(DocumentSnapshot demandeDoc, bool accepte) async {
   }
 }
 
-  void _showProfileDetails(Map<String, dynamic> demande) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Détails du profil"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              leading: CircleAvatar(
-                backgroundImage: NetworkImage(demande['photo']),
-              ),
-              title: Text(demande['nom']),
-              subtitle: Text(demande['statut']),
-            ),
-            SizedBox(height: 16),
-            Text("Revenus: ${demande['revenu']}"),
-            SizedBox(height: 8),
-            Text("Motif de refus: ${demande['motif']}"),
-            // Vous pouvez ajouter d'autres détails ici
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: Text("Fermer"),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onPressed) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color),
-              SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(color: color),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
- /* void _rejeterDemande(Map<String, dynamic> demande) {
-    print("Demande rejetée: ${demande['nom']}");
-    // Implémentez votre logique ici
-  }
-
-  void _mettreDeCote(Map<String, dynamic> demande) {
-    print("Demande mise de côté: ${demande['nom']}");
-    // Implémentez votre logique ici
-  }*/
 }
