@@ -17,6 +17,10 @@ class GestionLocativeScreen extends StatelessWidget {
         'statut': 'Payé',
       });
 
+      await FirebaseFirestore.instance.collection('locations').doc(locationId).update({
+        'statut': 'Payé',
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Paiement effectué avec succès. Reçu envoyé par email !'),
@@ -33,171 +37,139 @@ class GestionLocativeScreen extends StatelessWidget {
     }
   }
 
-  void showContratDetails(BuildContext context, Map<String, dynamic> contrat) {
-    showDialog(
+  void afficherContrat(BuildContext context, Map<String, dynamic> contrat) {
+    showModalBottomSheet(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(contrat['detailsLogement']['titre'] ?? 'Détails du contrat'),
-        content: SingleChildScrollView(
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("🏠 Adresse : ${contrat['detailsLogement']['adresse']}"),
-              Text("💰 Avance : ${contrat['avance']} FCFA"),
-              Text("🔐 Caution : ${contrat['caution']} FCFA"),
-              Text("📅 Début : ${DateFormat.yMMMd().format(contrat['dateDebut'].toDate())}"),
-              Text("📅 Fin : ${DateFormat.yMMMd().format(contrat['dateFin'].toDate())}"),
+              Text("Contrat de location", style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 10),
-              Text("🛋️ Composition :"),
-              ...contrat['composition'].entries.map<Widget>((entry) =>
-                  Text("- ${entry.key} : ${entry.value}")),
+              Text("• Avance : ${contrat['avance']} FCFA"),
+              Text("• Caution : ${contrat['caution']} FCFA"),
+              Text("• Durée : ${contrat['duree']} ${contrat['dureeType']}"),
               const SizedBox(height: 10),
-              Text("📌 Conditions spéciales :"),
-              ...List.from(contrat['conditionsSpeciales'] ?? [])
-                  .map<Widget>((e) => Text("• $e")),
+              Text("📌 Composition du logement :"),
+              ...((contrat['composition'] as Map<String, dynamic>).entries).map((e) => Text("• ${e.key} : ${e.value}")),
               const SizedBox(height: 10),
-              Text("📐 Surface : ${contrat['detailsLogement']['surface']} m²"),
-              Text("💸 Mode de paiement : ${contrat['modePaiement']}"),
+              Text("📋 Conditions spéciales :"),
+              ...((contrat['conditionsSpeciales'] as List).map((e) => Text("✓ $e"))),
+              const SizedBox(height: 10),
+              Text("📅 Dates :"),
+              Text("• Début : ${DateFormat('dd/MM/yyyy').format((contrat['dateDebut'] as Timestamp).toDate())}"),
+              Text("• Fin : ${DateFormat('dd/MM/yyyy').format((contrat['dateFin'] as Timestamp).toDate())}"),
+              const SizedBox(height: 10),
+              Text("📍 Adresse : ${contrat['detailsLogement']['adresse']}"),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            child: const Text('Fermer'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final locationsStream = FirebaseFirestore.instance
-        .collection('locations')
-        .where('userId', isEqualTo: userId)
-        .snapshots();
-
-    final contratsStream = FirebaseFirestore.instance
-        .collection('contrats')
-        .where('locataireId', isEqualTo: userId)
-        .snapshots();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestion locative', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.orange,
+        title: const Text('Ma gestion locative', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.deepOrange,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            StreamBuilder(
-              stream: locationsStream,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) return const Text('Erreur lors du chargement des locations.');
-                if (!snapshot.hasData) return const CircularProgressIndicator();
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('locations')
+            .where('userId', isEqualTo: userId)
+            .snapshots(),
+        builder: (context, locationSnapshot) {
+          if (locationSnapshot.hasError) {
+            return const Center(child: Text('Erreur de chargement.'));
+          }
 
-                var locations = snapshot.data!.docs;
+          if (!locationSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                if (locations.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('Aucune location trouvée.'),
-                  );
-                }
+          var locations = locationSnapshot.data!.docs;
 
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  itemCount: locations.length,
-                  itemBuilder: (context, index) {
-                    var location = locations[index];
-                    var montant = (location['montant'] is int)
-                        ? location['montant'].toDouble()
-                        : location['montant'];
+          if (locations.isEmpty) {
+            return const Center(child: Text('Aucune location trouvée.'));
+          }
 
-                    return Card(
-                      elevation: 4,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        title: Text(location['nomLogement'],
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Loyer mensuel : ${montant.toStringAsFixed(2)} FCFA'),
-                            Text('Statut : ${location['statut']}'),
-                          ],
-                        ),
-                        trailing: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: location['statut'] == 'Payé'
-                              ? null
-                              : () => effectuerPaiement(
-                                    location.id,
-                                    context,
-                                    montant,
-                                  ),
-                          child: const Text('Payer'),
-                        ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: locations.length,
+            itemBuilder: (context, index) {
+              var location = locations[index];
+              var montant = (location['montant'] is int)
+                  ? location['montant'].toDouble()
+                  : location['montant'];
+
+              return FutureBuilder<Map<String, dynamic>?>(
+                future: FirebaseFirestore.instance
+                    .collection('contrats')
+                    .where('locataireId', isEqualTo: userId)
+                    .where('logementId', isEqualTo: location['logementId'])
+                    .limit(1)
+                    .get()
+                    .then((snapshot) =>
+                        snapshot.docs.isNotEmpty ? snapshot.docs.first.data() : null),
+                builder: (context, contratSnapshot) {
+                  if (contratSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  var contrat = contratSnapshot.data;
+
+                  return Card(
+                    elevation: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(location['nomLogement'],
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          Text("Loyer : ${montant.toStringAsFixed(0)} FCFA/mois"),
+                          Text("Statut : ${location['statut']}"),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                onPressed: location['statut'] == 'Payé'
+                                    ? null
+                                    : () => effectuerPaiement(location.id, context, montant),
+                                icon: const Icon(Icons.payment),
+                                label: const Text("Payer"),
+                              ),
+                              const SizedBox(width: 12),
+                              if (contrat != null)
+                                OutlinedButton.icon(
+                                  onPressed: () => afficherContrat(context, contrat),
+                                  icon: const Icon(Icons.description_outlined),
+                                  label: const Text("Consulter contrat"),
+                                ),
+                            ],
+                          )
+                        ],
                       ),
-                    );
-                  },
-                );
-              },
-            ),
-            const Divider(thickness: 2),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('📄 Contrats', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            StreamBuilder(
-              stream: contratsStream,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) return const Text('Erreur lors du chargement des contrats.');
-                if (!snapshot.hasData) return const CircularProgressIndicator();
-
-                var contrats = snapshot.data!.docs;
-
-                if (contrats.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('Aucun contrat disponible.'),
+                    ),
                   );
-                }
-
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: contrats.length,
-                  itemBuilder: (context, index) {
-                    var contrat = contrats[index].data() as Map<String, dynamic>;
-                    return Card(
-                      elevation: 3,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        title: Text(contrat['detailsLogement']['titre'] ?? 'Contrat'),
-                        subtitle: Text("Durée : ${contrat['duree']} ${contrat['dureeType']}"),
-                        trailing: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                          ),
-                          onPressed: () => showContratDetails(context, contrat),
-                          child: const Text("Consulter"),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ],
-        ),
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }

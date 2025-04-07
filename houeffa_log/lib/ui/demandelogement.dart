@@ -58,6 +58,7 @@ class _DemandeLogementState extends State<DemandeLogement> {
           'timestamp': Timestamp.now(),
           'logement_id': widget.logementId.toString(), // ✅ forcer en string
           'locataire_id': user.uid,
+          'statut': 'En attente', 
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
